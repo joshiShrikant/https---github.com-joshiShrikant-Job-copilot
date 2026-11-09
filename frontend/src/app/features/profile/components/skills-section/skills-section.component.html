@@ -1,0 +1,173 @@
+<div class="section-stack">
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="status-banner success" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>Technical Skills Matrix</h2>
+        <p>Core languages, frameworks, and tools weighted heavily by the AI matching engine.</p>
+      </div>
+
+      @if (!isFormOpen()) {
+        <button type="button" class="btn-primary" (click)="openCreateForm()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Add Skill
+        </button>
+      }
+    </div>
+
+    @if (isFormOpen()) {
+      <form class="editor-panel" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="form-grid">
+          <div class="field-group">
+            <label class="field-label" for="skill-name-input">
+              Skill name <span class="required-mark">*</span>
+            </label>
+            <input
+              id="skill-name-input"
+              type="text"
+              class="field-input"
+              [class.is-invalid]="form.controls.skillName.invalid && form.controls.skillName.touched"
+              formControlName="skillName"
+              placeholder="e.g. Spring Boot, Angular, PostgreSQL"
+            />
+            @if (form.controls.skillName.invalid && form.controls.skillName.touched) {
+              <span class="field-error">Skill name is required (max 100 characters).</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="skill-years-input">
+              Years of experience <span class="required-mark">*</span>
+            </label>
+            <input
+              id="skill-years-input"
+              type="number"
+              step="0.5"
+              min="0"
+              max="70"
+              class="field-input"
+              [class.is-invalid]="
+                form.controls.yearsExperience.invalid && form.controls.yearsExperience.touched
+              "
+              formControlName="yearsExperience"
+            />
+            @if (form.controls.yearsExperience.invalid && form.controls.yearsExperience.touched) {
+              <span class="field-error">Years must be between 0 and 70.</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="skill-proficiency-select">
+              Proficiency level <span class="required-mark">*</span>
+            </label>
+            <select
+              id="skill-proficiency-select"
+              class="field-select"
+              formControlName="proficiencyLevel"
+            >
+              @for (option of proficiencyOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field-group checkbox-align">
+            <label class="checkbox-row">
+              <input type="checkbox" formControlName="primary" />
+              <span>Mark as primary / core stack skill</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            <span class="material-symbols-outlined" aria-hidden="true">check</span>
+            @if (isSubmitting()) {
+              Saving...
+            } @else if (editingSkillId() !== null) {
+              Update Skill
+            } @else {
+              Save Skill
+            }
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (skills().length === 0) {
+      <div class="empty-state">
+        <span class="material-symbols-outlined" aria-hidden="true">code_blocks</span>
+        <h3>No skills added yet</h3>
+        <p>
+          Add your strongest backend, frontend, cloud, and database skills so EuroJob Copilot can
+          calculate accurate role match scores.
+        </p>
+      </div>
+    } @else {
+      <div class="skills-grid">
+        @for (skill of skills(); track skill.id) {
+          <article class="skill-item">
+            <div class="skill-info">
+              <div class="skill-title-row">
+                <span class="skill-name">{{ skill.skillName }}</span>
+                @if (skill.primary) {
+                  <span class="badge-pill primary">Primary</span>
+                }
+              </div>
+              <div class="skill-meta">
+                <span class="badge-pill">{{ formatProficiency(skill.proficiencyLevel) }}</span>
+                <span class="meta-text">{{ skill.yearsExperience }} yrs</span>
+              </div>
+            </div>
+
+            <div class="item-actions">
+              @if (confirmDeleteId() === skill.id) {
+                <button
+                  type="button"
+                  class="btn-danger-ghost"
+                  [disabled]="deletingSkillId() === skill.id"
+                  (click)="confirmDelete(skill)"
+                >
+                  Confirm Delete
+                </button>
+                <button type="button" class="btn-icon" (click)="cancelDelete()">Cancel</button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn-icon"
+                  [attr.aria-label]="'Edit skill ' + skill.skillName"
+                  (click)="openEditForm(skill)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-danger-ghost"
+                  [attr.aria-label]="'Delete skill ' + skill.skillName"
+                  (click)="requestDelete(skill.id)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                </button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>
+

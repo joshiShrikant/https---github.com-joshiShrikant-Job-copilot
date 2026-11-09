@@ -1,0 +1,43 @@
+<section class="dash-card">
+  <div class="dash-card-head">
+    <div>
+      <h2>Recent Activity</h2>
+      <p>Latest milestones across applications, saved jobs, resumes, and alerts.</p>
+    </div>
+  </div>
+
+  @if (items().length === 0) {
+    <div class="empty-state">
+      <strong>Your activity timeline is clean</strong>
+      <p>
+        Upload a master resume, save high-match European roles, or log an application to see your
+        latest updates here.
+      </p>
+      <a routerLink="/resumes" class="card-link-btn">
+        <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+        Upload Master CV
+      </a>
+    </div>
+  } @else {
+    <ul class="activity-list">
+      @for (item of items(); track item.title + item.timestamp) {
+        <li class="activity-row">
+          <span class="activity-icon-wrap" aria-hidden="true">
+            <span class="material-symbols-outlined">{{ iconForType(item.type) }}</span>
+          </span>
+          <div class="activity-copy">
+            <a [routerLink]="item.targetRoute" class="activity-title">{{ item.title }}</a>
+            <div class="activity-meta">
+              <span>{{ item.subtitle }}</span>
+              <span>·</span>
+              <time [attr.datetime]="item.timestamp">
+                {{ item.timestamp | date: 'MMM d, HH:mm' }}
+              </time>
+            </div>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>
+

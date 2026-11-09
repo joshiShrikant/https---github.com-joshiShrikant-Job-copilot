@@ -1,0 +1,92 @@
+<aside
+  class="sidebar"
+  [class.collapsed]="collapsed() && !isMobileViewport()"
+  [class.mobile-viewport]="isMobileViewport()"
+  [class.mobile-open]="mobileOpen()"
+  [attr.aria-label]="'Primary workspace navigation'"
+  [attr.aria-hidden]="isMobileViewport() && !mobileOpen() ? 'true' : null"
+>
+  <div class="sidebar-header">
+    <a routerLink="/dashboard" class="brand-logo" (click)="isMobileViewport() ? mobileClose.emit() : null">
+      <span class="brand-mark" aria-hidden="true">
+        <span class="material-symbols-outlined logo-icon">flight_takeoff</span>
+      </span>
+      @if (!collapsed() || isMobileViewport()) {
+        <span class="brand-wordmark">
+          <span class="brand-name">EuroJob</span><span class="brand-accent">Copilot</span>
+        </span>
+      }
+    </a>
+
+    @if (isMobileViewport()) {
+      <button
+        type="button"
+        class="header-icon-btn"
+        (click)="mobileClose.emit()"
+        aria-label="Close navigation menu"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    } @else {
+      <button
+        type="button"
+        class="header-icon-btn"
+        (click)="collapseToggle.emit()"
+        [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-expanded]="!collapsed()"
+        [attr.title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ collapsed() ? 'chevron_right' : 'chevron_left' }}
+        </span>
+      </button>
+    }
+  </div>
+
+  <nav class="sidebar-nav" aria-label="Application sections">
+    @for (group of navGroups(); track group.id; let isFirstGroup = $first) {
+      <div class="nav-group" [class.has-divider]="!isFirstGroup">
+        @if (!collapsed() || isMobileViewport()) {
+          <div class="nav-group-label">{{ group.label }}</div>
+        }
+        <ul class="nav-list">
+          @for (item of group.items; track item.id) {
+            <li>
+              <a
+                [routerLink]="item.route"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+                class="nav-item"
+                (click)="onNavItemClick(item)"
+                [attr.title]="collapsed() && !isMobileViewport() ? item.label : null"
+                [attr.aria-label]="item.label"
+              >
+                <span class="material-symbols-outlined nav-icon" aria-hidden="true">{{ item.icon }}</span>
+                @if (!collapsed() || isMobileViewport()) {
+                  <span class="nav-label">{{ item.label }}</span>
+                }
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+  </nav>
+
+  <div class="sidebar-footer">
+    <button
+      type="button"
+      class="theme-switch-btn"
+      (click)="themeToggle.emit()"
+      [attr.aria-label]="isDarkMode() ? 'Switch to light theme' : 'Switch to dark theme'"
+      [attr.title]="collapsed() && !isMobileViewport() ? (isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode') : null"
+    >
+      <span class="material-symbols-outlined footer-icon" aria-hidden="true">
+        {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
+      </span>
+      @if (!collapsed() || isMobileViewport()) {
+        <span class="footer-label">{{ isDarkMode() ? 'Light Mode' : 'Dark Mode' }}</span>
+      }
+    </button>
+  </div>
+</aside>

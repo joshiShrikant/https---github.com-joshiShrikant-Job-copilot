@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="037-add-tailored-resume-generation-fields" author="eurojob-architect">
+        <comment>Add title, versioning, AI attribution, focus metadata, and human edit flag to tailored_resumes</comment>
+        <addColumn tableName="tailored_resumes">
+            <column name="title" type="VARCHAR(200)" defaultValue="Tailored Resume">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version_number" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tailoring_focus" type="VARCHAR(500)"/>
+            <column name="ai_provider" type="VARCHAR(50)"/>
+            <column name="ai_model_used" type="VARCHAR(100)"/>
+            <column name="generated_at" type="DATETIME"/>
+            <column name="edited_by_user" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <createIndex tableName="tailored_resumes" indexName="idx_tailored_resumes_user_created">
+            <column name="user_id"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <createIndex tableName="tailored_resumes" indexName="idx_tailored_resumes_user_job_ver">
+            <column name="user_id"/>
+            <column name="job_id"/>
+            <column name="version_number"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="tailored_resumes" indexName="idx_tailored_resumes_user_job_ver"/>
+            <dropIndex tableName="tailored_resumes" indexName="idx_tailored_resumes_user_created"/>
+            <dropColumn tableName="tailored_resumes" columnName="edited_by_user"/>
+            <dropColumn tableName="tailored_resumes" columnName="generated_at"/>
+            <dropColumn tableName="tailored_resumes" columnName="ai_model_used"/>
+            <dropColumn tableName="tailored_resumes" columnName="ai_provider"/>
+            <dropColumn tableName="tailored_resumes" columnName="tailoring_focus"/>
+            <dropColumn tableName="tailored_resumes" columnName="version_number"/>
+            <dropColumn tableName="tailored_resumes" columnName="title"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

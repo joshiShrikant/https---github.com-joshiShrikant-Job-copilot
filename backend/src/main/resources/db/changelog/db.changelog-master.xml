@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Foundation Identity & Authentication Migration -->
+    <include file="changes/001-initial-identity-schema.xml" relativeToChangelogFile="true"/>
+
+    <!-- Profile, Skills, Educations, Work Experiences & Preferences -->
+    <include file="changes/002-profile-and-auth-tokens.xml" relativeToChangelogFile="true"/>
+
+    <!-- Companies & Visa Sponsorship Registers -->
+    <include file="changes/003-companies-and-sponsorship.xml" relativeToChangelogFile="true"/>
+
+    <!-- Job Listings, Fetch Audit Logs & AI Analysis Cache -->
+    <include file="changes/004-jobs-and-ingestion.xml" relativeToChangelogFile="true"/>
+
+    <!-- Matching Scores & User Job Interactions -->
+    <include file="changes/005-matching-and-interactions.xml" relativeToChangelogFile="true"/>
+
+    <!-- Resumes, Cover Letters, Applications & Recruiter CRM -->
+    <include file="changes/006-resumes-and-applications.xml" relativeToChangelogFile="true"/>
+
+    <!-- Interview Preparation & User Notifications -->
+    <include file="changes/007-interview-and-notifications.xml" relativeToChangelogFile="true"/>
+
+    <!-- Rule-Based Deterministic Matching Breakdown Columns -->
+    <include file="changes/008-deterministic-matching-fields.xml" relativeToChangelogFile="true"/>
+
+    <!-- AI JD Analysis Extended Extraction & Version History -->
+    <include file="changes/009-ai-jd-analysis-fields-and-history.xml" relativeToChangelogFile="true"/>
+
+    <!-- AI Semantic Matching Comparison Columns -->
+    <include file="changes/010-semantic-ai-matching-fields.xml" relativeToChangelogFile="true"/>
+
+    <!-- Visa Sponsorship Intelligence, IND Registry & Verification History -->
+    <include file="changes/011-visa-sponsorship-intelligence.xml" relativeToChangelogFile="true"/>
+
+    <!-- Company Intelligence Dossier Fields & User Target Company Bookmarks -->
+    <include file="changes/012-company-intelligence-and-saved-companies.xml" relativeToChangelogFile="true"/>
+
+    <!-- Master Resume Parsing Metadata & Human Approval Lifecycle -->
+    <include file="changes/013-master-resume-parsing.xml" relativeToChangelogFile="true"/>
+
+    <!-- Tailored Resume Generation Versioning & AI Audit Fields -->
+    <include file="changes/014-tailored-resume-generation-fields.xml" relativeToChangelogFile="true"/>
+
+    <!-- AI Cover Letter Generation Metadata, Notes & Versioning Fields -->
+    <include file="changes/015-cover-letter-generation-fields.xml" relativeToChangelogFile="true"/>
+
+    <!-- Application Follow-Up & Recruiter CRM Outreach Draft Lifecycle Fields -->
+    <include file="changes/016-application-and-recruiter-crm-fields.xml" relativeToChangelogFile="true"/>
+
+    <!-- AI Assistant, Autopilot, Notifications & Interview Prep Extensions -->
+    <include file="changes/017-phase7-analytics-assistant-autopilot-interview.xml" relativeToChangelogFile="true"/>
+
+</databaseChangeLog>

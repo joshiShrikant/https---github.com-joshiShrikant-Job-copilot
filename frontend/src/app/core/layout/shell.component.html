@@ -1,0 +1,51 @@
+<a href="#main-content" class="skip-link" (click)="focusMainContent($event)">
+  Skip to main content
+</a>
+
+<div
+  class="shell-container"
+  [class.sidebar-collapsed]="layout.isSidebarCollapsed()"
+  [class.drawer-open]="layout.isMobileDrawerOpen()"
+>
+  <app-sidebar
+    [collapsed]="layout.isSidebarCollapsed()"
+    [mobileOpen]="layout.isMobileDrawerOpen()"
+    [isMobileViewport]="layout.isMobileOrTablet()"
+    [isDarkMode]="theme.isDarkMode()"
+    (collapseToggle)="layout.toggleSidebarCollapse()"
+    (mobileClose)="layout.closeMobileDrawer()"
+    (themeToggle)="theme.toggleTheme()"
+  />
+
+  @if (layout.isMobileOrTablet() && layout.isMobileDrawerOpen()) {
+    <div
+      class="drawer-backdrop"
+      (click)="layout.closeMobileDrawer()"
+      aria-hidden="true"
+    ></div>
+  }
+
+  <div class="main-wrapper">
+    <app-header
+      [breadcrumbs]="layout.breadcrumbs()"
+      [showMobileMenuButton]="layout.isMobileOrTablet()"
+      [isMobileDrawerOpen]="layout.isMobileDrawerOpen()"
+      [isSidebarCollapsed]="layout.isSidebarCollapsed()"
+      [isDarkMode]="theme.isDarkMode()"
+      [userDisplayName]="auth.userFullName()"
+      [userSecondaryLabel]="auth.currentUser()?.email ?? 'Not signed in'"
+      [isAuthenticated]="auth.isAuthenticated()"
+      [unreadNotificationsCount]="unreadCount()"
+      (mobileMenuToggle)="layout.toggleMobileDrawer()"
+      (sidebarCollapseToggle)="layout.toggleSidebarCollapse()"
+      (themeToggle)="theme.toggleTheme()"
+      (logoutRequested)="onLogoutRequested()"
+    />
+
+    <main #mainContent id="main-content" class="page-content" tabindex="-1">
+      <div class="content-container">
+        <router-outlet />
+      </div>
+    </main>
+  </div>
+</div>

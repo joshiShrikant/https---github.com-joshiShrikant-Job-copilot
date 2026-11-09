@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="009-create-companies-table" author="eurojob-architect">
+        <comment>Create companies table with sponsor classification</comment>
+        <createTable tableName="companies">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_companies" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="normalized_name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_companies_normalized_name"/>
+            </column>
+            <column name="website_url" type="VARCHAR(500)"/>
+            <column name="careers_url" type="VARCHAR(500)"/>
+            <column name="headquarters_country" type="VARCHAR(100)"/>
+            <column name="headquarters_city" type="VARCHAR(100)"/>
+            <column name="industry" type="VARCHAR(100)"/>
+            <column name="company_size" type="VARCHAR(50)"/>
+            <column name="logo_url" type="VARCHAR(500)"/>
+            <column name="is_verified_sponsor" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sponsor_confidence_level" type="VARCHAR(30)" defaultValue="UNVERIFIED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="companies" indexName="idx_companies_sponsor">
+            <column name="is_verified_sponsor"/>
+            <column name="sponsor_confidence_level"/>
+        </createIndex>
+
+        <createIndex tableName="companies" indexName="idx_companies_country">
+            <column name="headquarters_country"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="companies"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="010-create-company-sponsorship-records-table" author="eurojob-architect">
+        <comment>Create company_sponsorship_records table for official registries (e.g., IND Netherlands)</comment>
+        <createTable tableName="company_sponsorship_records">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_company_sponsorship_records" nullable="false"/>
+            </column>
+            <column name="company_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registry_source" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registry_identifier" type="VARCHAR(150)"/>
+            <column name="official_registered_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)" defaultValue="RECOGNIZED_SPONSOR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="evidence_notes" type="TEXT"/>
+            <column name="source_url" type="VARCHAR(500)"/>
+            <column name="verified_at" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="company_sponsorship_records"
+                                 baseColumnNames="company_id"
+                                 constraintName="fk_sponsorship_records_company"
+                                 referencedTableName="companies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="company_sponsorship_records"
+                             columnNames="company_id, country, registry_source"
+                             constraintName="uk_sponsorship_company_source"/>
+
+        <createIndex tableName="company_sponsorship_records" indexName="idx_sponsorship_lookup">
+            <column name="country"/>
+            <column name="status"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="company_sponsorship_records"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

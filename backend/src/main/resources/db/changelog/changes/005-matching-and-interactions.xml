@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="014-create-user-job-interactions-table" author="eurojob-architect">
+        <comment>Create user_job_interactions table for saved, interested, hidden, and applied states</comment>
+        <createTable tableName="user_job_interactions">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_job_interactions" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_saved" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="saved_at" type="DATETIME"/>
+            <column name="is_interested" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="interested_at" type="DATETIME"/>
+            <column name="is_hidden" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hidden_at" type="DATETIME"/>
+            <column name="has_applied" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="applied_at" type="DATETIME"/>
+            <column name="redirect_clicked_at" type="DATETIME"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_job_interactions"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_interactions_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="user_job_interactions"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_interactions_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="user_job_interactions"
+                             columnNames="user_id, job_id"
+                             constraintName="uk_interactions_user_job"/>
+
+        <createIndex tableName="user_job_interactions" indexName="idx_interactions_saved">
+            <column name="user_id"/>
+            <column name="is_saved"/>
+        </createIndex>
+
+        <createIndex tableName="user_job_interactions" indexName="idx_interactions_interested">
+            <column name="user_id"/>
+            <column name="is_interested"/>
+        </createIndex>
+
+        <createIndex tableName="user_job_interactions" indexName="idx_interactions_hidden">
+            <column name="user_id"/>
+            <column name="is_hidden"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="user_job_interactions"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="015-create-job-match-scores-table" author="eurojob-architect">
+        <comment>Create job_match_scores table storing deterministic and semantic AI scores</comment>
+        <createTable tableName="job_match_scores">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_job_match_scores" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deterministic_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ai_score" type="DECIMAL(5,2)"/>
+            <column name="final_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="skill_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="experience_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sponsorship_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="salary_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="matching_skills" type="JSON"/>
+            <column name="missing_skills" type="JSON"/>
+            <column name="ai_rationale" type="TEXT"/>
+            <column name="calculated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="job_match_scores"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_match_scores_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="job_match_scores"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_match_scores_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="job_match_scores"
+                             columnNames="user_id, job_id"
+                             constraintName="uk_match_scores_user_job"/>
+
+        <createIndex tableName="job_match_scores" indexName="idx_match_scores_ranking">
+            <column name="user_id"/>
+            <column name="final_score"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="job_match_scores"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

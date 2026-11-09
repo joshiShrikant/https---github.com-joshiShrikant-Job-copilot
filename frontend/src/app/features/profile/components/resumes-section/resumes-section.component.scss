@@ -1,0 +1,147 @@
+@use '../../styles/profile-shared';
+
+.upload-dropzone {
+  border: 1.5px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-canvas);
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &.is-dragging {
+    border-color: var(--color-brand-primary);
+    background-color: var(--color-brand-soft);
+  }
+}
+
+.dropzone-icon {
+  font-size: 28px;
+  color: var(--color-brand-primary);
+  flex-shrink: 0;
+}
+
+.dropzone-copy {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+  }
+
+  span {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+  }
+}
+
+.dropzone-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-meta-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.title-field {
+  flex: 1;
+  min-width: 240px;
+}
+
+.upload-submit-btn {
+  height: 38px;
+}
+
+.resume-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resume-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 15px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-canvas);
+
+  &.is-active-review {
+    border-color: var(--color-brand-primary);
+    background-color: var(--color-brand-soft);
+  }
+}
+
+.badge-pill.warning {
+  background-color: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.38);
+  color: #b45309;
+}
+
+.resume-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.resume-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-brand-soft);
+  color: var(--color-brand-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.resume-info {
+  min-width: 0;
+}
+
+.resume-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  h3 {
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+}
+
+.resume-meta {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.resume-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+

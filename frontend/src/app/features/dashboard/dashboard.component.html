@@ -1,0 +1,127 @@
+<div class="dashboard-page">
+  <app-page-header title="Executive Dashboard" icon="dashboard" [subtitle]="subtitleText()">
+    <div page-actions class="header-actions">
+      @if (summary(); as s) {
+        <a
+          routerLink="/settings"
+          [queryParams]="{ tab: 'search' }"
+          class="status-pill"
+          [class.is-good]="s.readiness.autopilotEnabled"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ s.readiness.autopilotEnabled ? 'auto_awesome' : 'tune' }}
+          </span>
+          <span>
+            {{ s.readiness.autopilotEnabled ? 'Autopilot Active' : 'Manual Discovery' }}
+          </span>
+        </a>
+      }
+      <button
+        type="button"
+        class="refresh-btn"
+        data-action="refresh-dashboard"
+        [disabled]="isLoading()"
+        (click)="refresh()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        <span>{{ isLoading() ? 'Refreshing...' : 'Refresh' }}</span>
+      </button>
+    </div>
+  </app-page-header>
+
+  @if (loadErrorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ loadErrorMessage() }}</span>
+      <button type="button" class="card-link-btn" data-action="retry-dashboard" (click)="refresh()">
+        Retry
+      </button>
+    </div>
+  }
+
+  @if (isLoading() && !summary()) {
+    <section class="dash-card">
+      <div class="status-banner info" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+        <span>Loading executive workspace metrics...</span>
+      </div>
+    </section>
+  } @else if (summary(); as s) {
+    <section class="kpi-grid" aria-label="Key dashboard metrics">
+      @for (card of kpiCards(); track card.id) {
+        <a [routerLink]="card.route" class="kpi-card" [attr.data-kpi]="card.id">
+          <div class="kpi-head">
+            <span class="kpi-label">{{ card.label }}</span>
+            <span class="material-symbols-outlined kpi-icon" aria-hidden="true">{{ card.icon }}</span>
+          </div>
+          <div class="kpi-value">{{ card.value }}</div>
+          <div class="kpi-subtext" [class.is-accent]="card.accent === 'success'">
+            {{ card.subtext }}
+          </div>
+        </a>
+      }
+    </section>
+
+    <div class="dashboard-columns">
+      <div class="main-column">
+        <app-readiness-checklist-card [readiness]="s.readiness" />
+        <app-pipeline-funnel-card
+          [stages]="s.pipelineBreakdown"
+          [activeApplicationsCount]="s.activeApplicationsCount"
+        />
+      </div>
+
+      <div class="side-column">
+        <section class="dash-card">
+          <div class="dash-card-head">
+            <div>
+              <h2>Search &amp; Visa Focus</h2>
+              <p>Active criteria guiding discovery and match ranking.</p>
+            </div>
+            <a routerLink="/settings" class="card-link-btn">Edit Targets</a>
+          </div>
+
+          <div class="focus-group">
+            <span class="focus-label">Target European countries</span>
+            @if (s.readiness.preferredCountries.length > 0) {
+              <div class="chip-wrap">
+                @for (country of s.readiness.preferredCountries; track country) {
+                  <span class="focus-chip">{{ country }}</span>
+                }
+              </div>
+            } @else {
+              <span class="focus-empty">All European hubs included (no country filter set).</span>
+            }
+          </div>
+
+          <div class="focus-group">
+            <span class="focus-label">Preferred job titles</span>
+            @if (s.readiness.preferredJobTitles.length > 0) {
+              <div class="chip-wrap">
+                @for (title of s.readiness.preferredJobTitles; track title) {
+                  <span class="focus-chip">{{ title }}</span>
+                }
+              </div>
+            } @else {
+              <span class="focus-empty">Add target role titles in Settings to sharpen scoring.</span>
+            }
+          </div>
+
+          <div class="shortcut-grid">
+            @for (item of shortcuts; track item.route) {
+              <a [routerLink]="item.route" class="shortcut-tile">
+                <span class="material-symbols-outlined" aria-hidden="true">{{ item.icon }}</span>
+                <div>
+                  <strong>{{ item.label }}</strong>
+                  <span>{{ item.description }}</span>
+                </div>
+              </a>
+            }
+          </div>
+        </section>
+
+        <app-recent-activity-card [items]="s.recentActivity" />
+      </div>
+    </div>
+  }
+</div>

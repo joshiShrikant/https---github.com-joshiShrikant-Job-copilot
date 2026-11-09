@@ -1,0 +1,236 @@
+<div class="section-stack">
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="status-banner success" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>Upload Master Resume</h2>
+        <p>Upload a clean PDF or DOCX master CV (max 10 MB) stored under your private vault.</p>
+      </div>
+    </div>
+
+    <div
+      class="upload-dropzone"
+      [class.is-dragging]="isDragging()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <input
+        #fileInput
+        type="file"
+        accept=".pdf,.docx"
+        hidden
+        (change)="onFileInputChange($event)"
+      />
+
+      <span class="material-symbols-outlined dropzone-icon" aria-hidden="true">upload_file</span>
+      <div class="dropzone-copy">
+        @if (selectedFile(); as file) {
+          <strong>Selected: {{ file.name }}</strong>
+          <span>{{ formatFileSize(file.size) }} · Ready to upload</span>
+        } @else {
+          <strong>Drag &amp; drop your PDF or DOCX resume here</strong>
+          <span>Supported formats: .pdf, .docx up to 10 MB</span>
+        }
+      </div>
+
+      <div class="dropzone-actions">
+        <button type="button" class="btn-secondary" (click)="openFilePicker()">
+          Choose File
+        </button>
+        @if (selectedFile()) {
+          <button type="button" class="btn-icon" (click)="clearSelection()">Clear</button>
+        }
+      </div>
+    </div>
+
+    @if (selectedFile()) {
+      <div class="upload-meta-row">
+        <div class="field-group title-field">
+          <label class="field-label" for="resume-title-input">
+            Resume title <span class="required-mark">*</span>
+          </label>
+          <input
+            id="resume-title-input"
+            type="text"
+            class="field-input"
+            maxlength="200"
+            [value]="resumeTitle()"
+            (input)="onTitleInput($event)"
+            placeholder="e.g. Senior Java Backend Master CV"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="btn-primary upload-submit-btn"
+          [disabled]="isUploading()"
+          (click)="uploadSelectedResume()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span>
+          @if (isUploading()) {
+            Uploading...
+          } @else {
+            Upload Master Resume
+          }
+        </button>
+      </div>
+    }
+  </section>
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>Uploaded Resumes ({{ resumes().length }})</h2>
+        <p>Parse master PDF or DOCX CVs with AI, verify extracted data, and approve to sync your profile.</p>
+      </div>
+    </div>
+
+    @if (isLoading()) {
+      <div class="status-banner info" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+        <span>Loading your uploaded resumes...</span>
+      </div>
+    } @else if (resumes().length === 0) {
+      <div class="empty-state">
+        <span class="material-symbols-outlined" aria-hidden="true">description</span>
+        <h3>No master resumes uploaded yet</h3>
+        <p>
+          Upload your existing PDF or DOCX CV above so you can parse, review, approve, and sync your
+          qualifications across EuroJob Copilot.
+        </p>
+      </div>
+    } @else {
+      <div class="resume-list">
+        @for (resume of resumes(); track resume.uuid) {
+          <article class="resume-card" [class.is-active-review]="activeReviewUuid() === resume.uuid">
+            <div class="resume-main">
+              <div class="resume-icon-box" aria-hidden="true">
+                <span class="material-symbols-outlined">description</span>
+              </div>
+
+              <div class="resume-info">
+                <div class="resume-title-row">
+                  <h3>{{ resume.title }}</h3>
+                  <span class="badge-pill primary">v{{ resume.versionNumber }}</span>
+                  <span class="badge-pill">{{ getFormatBadge(resume) }}</span>
+                  @if (resume.isMasterApproved || resume.parseStatus === 'APPROVED') {
+                    <span class="badge-pill success">Master Approved</span>
+                  } @else if (resume.parseStatus === 'PARSED') {
+                    <span class="badge-pill warning">Parsed · Review Pending</span>
+                  } @else {
+                    <span class="badge-pill">Not Parsed</span>
+                  }
+                  @if (resume.aiModelUsed; as aiModel) {
+                    <span class="badge-pill">{{ aiModel }}</span>
+                  }
+                </div>
+                <p class="resume-meta">
+                  <span>{{ resume.fileName }}</span>
+                  <span>· {{ formatFileSize(resume.fileSizeBytes) }}</span>
+                  @if (resume.createdAt) {
+                    <span>· Uploaded {{ formatDate(resume.createdAt) }}</span>
+                  }
+                  @if (resume.approvedAt) {
+                    <span>· Approved {{ formatDate(resume.approvedAt) }}</span>
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div class="resume-actions">
+              @if (resume.resumeType === 'MASTER') {
+                <button
+                  type="button"
+                  class="btn-primary parse-btn"
+                  [disabled]="parsingUuid() === resume.uuid || isApproving()"
+                  (click)="parseResume(resume)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                  @if (parsingUuid() === resume.uuid) {
+                    Parsing...
+                  } @else if (resume.parseStatus === 'PARSED' || resume.parseStatus === 'APPROVED') {
+                    Re-parse
+                  } @else {
+                    Parse with AI
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-secondary review-btn"
+                  [disabled]="parsingUuid() === resume.uuid || isApproving()"
+                  (click)="openReviewPanel(resume)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">fact_check</span>
+                  Review &amp; Approve
+                </button>
+              }
+
+              <button
+                type="button"
+                class="btn-secondary"
+                [disabled]="downloadingUuid() === resume.uuid"
+                (click)="downloadResume(resume)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">download</span>
+                @if (downloadingUuid() === resume.uuid) {
+                  Downloading...
+                } @else {
+                  Download
+                }
+              </button>
+
+              @if (confirmDeleteUuid() === resume.uuid) {
+                <button
+                  type="button"
+                  class="btn-danger-ghost"
+                  [disabled]="deletingUuid() === resume.uuid"
+                  (click)="confirmDelete(resume)"
+                >
+                  Confirm Delete
+                </button>
+                <button type="button" class="btn-icon" (click)="cancelDelete()">Cancel</button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn-danger-ghost"
+                  [attr.aria-label]="'Delete resume ' + resume.title"
+                  (click)="requestDelete(resume.uuid)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                </button>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+
+  @if (activeReviewResume(); as reviewResume) {
+    <app-resume-review-panel
+      [resume]="reviewResume"
+      [parseResult]="reviewParseResult()"
+      [isLoadingDraft]="isLoadingReviewDraft()"
+      [isParsing]="parsingUuid() === reviewResume.uuid"
+      [isApproving]="isApproving()"
+      (parseRequested)="parseResume(reviewResume, $event)"
+      (approveRequested)="approveMasterResume($event)"
+      (closed)="closeReviewPanel()"
+    />
+  }
+</div>

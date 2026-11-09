@@ -1,0 +1,77 @@
+<header class="top-header">
+  <div class="header-left">
+    @if (showMobileMenuButton()) {
+      <button
+        type="button"
+        class="icon-action-btn mobile-menu-btn"
+        (click)="mobileMenuToggle.emit()"
+        [attr.aria-expanded]="isMobileDrawerOpen()"
+        aria-label="Toggle navigation menu"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ isMobileDrawerOpen() ? 'menu_open' : 'menu' }}
+        </span>
+      </button>
+    } @else if (isSidebarCollapsed()) {
+      <button
+        type="button"
+        class="icon-action-btn desktop-expand-btn"
+        (click)="sidebarCollapseToggle.emit()"
+        aria-label="Expand sidebar navigation"
+        title="Expand sidebar"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">dock_to_right</span>
+      </button>
+    }
+
+    <app-breadcrumbs [items]="breadcrumbs()" />
+  </div>
+
+  <div class="header-right">
+    <a routerLink="/jobs" class="discover-shortcut" title="Go to Discover Jobs">
+      <span class="material-symbols-outlined shortcut-icon" aria-hidden="true">travel_explore</span>
+      <span class="shortcut-label">Discover Jobs</span>
+    </a>
+
+    <a
+      routerLink="/notifications"
+      class="icon-action-btn notifications-btn"
+      [attr.aria-label]="
+        unreadNotificationsCount() > 0
+          ? 'View notifications (' + unreadNotificationsCount() + ' unread)'
+          : 'View notifications'
+      "
+      title="Notifications"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">notifications</span>
+      @if (unreadNotificationsCount() > 0) {
+        <span class="notification-badge" data-header-unread-badge>
+          {{ unreadNotificationsCount() > 99 ? '99+' : unreadNotificationsCount() }}
+        </span>
+      }
+    </a>
+
+    <button
+      type="button"
+      class="icon-action-btn"
+      (click)="themeToggle.emit()"
+      [attr.aria-label]="isDarkMode() ? 'Switch to light theme' : 'Switch to dark theme'"
+      [attr.title]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">
+        {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
+      </span>
+    </button>
+
+    <div class="header-divider" aria-hidden="true"></div>
+
+    <app-user-menu
+      [displayName]="userDisplayName()"
+      [secondaryLabel]="userSecondaryLabel()"
+      [isAuthenticated]="isAuthenticated()"
+      [isDarkMode]="isDarkMode()"
+      (themeToggle)="themeToggle.emit()"
+      (logoutRequested)="logoutRequested.emit()"
+    />
+  </div>
+</header>

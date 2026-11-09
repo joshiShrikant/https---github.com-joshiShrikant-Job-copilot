@@ -1,0 +1,403 @@
+<div class="applications-page">
+  <app-page-header
+    title="My Applications & Recruiter CRM"
+    icon="view_kanban"
+    [badge]="headerBadge()"
+    subtitle="Track every role across Kanban, Table, and Calendar timelines with linked tailored CVs, cover letters, follow-up reminders, and AI outreach drafts."
+  >
+    <a page-actions routerLink="/jobs" class="btn-secondary">
+      <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+      Browse Jobs
+    </a>
+    <button
+      page-actions
+      type="button"
+      class="btn-primary"
+      data-apps-track-btn
+      (click)="openCreateModal()"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+      Track Application
+    </button>
+  </app-page-header>
+
+  @if (loadErrorMessage(); as loadErr) {
+    <div class="status-banner is-error" role="alert" data-apps-load-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ loadErr }}</span>
+      <button type="button" class="btn-secondary" (click)="reloadWorkspace()">Retry</button>
+    </div>
+  }
+
+  @if (actionErrorMessage(); as actErr) {
+    <div class="status-banner is-error" role="alert" data-apps-action-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ actErr }}</span>
+    </div>
+  }
+
+  @if (actionSuccessMessage(); as okMsg) {
+    <div class="status-banner is-success" role="status" data-apps-success>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span class="banner-text">{{ okMsg }}</span>
+    </div>
+  }
+
+  <!-- KPI Summary Strip -->
+  <section class="kpi-strip" aria-label="Application pipeline metrics">
+    <div class="kpi-card">
+      <span class="kpi-label">Tracked Applications</span>
+      <strong class="kpi-value" data-kpi-total>{{ pipelineStats().totalCount }}</strong>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Interview / Assessment Stage</span>
+      <strong class="kpi-value" data-kpi-interviews>{{ pipelineStats().activeInterviews }}</strong>
+    </div>
+    <div class="kpi-card" [class.is-warning]="(reminders()?.overdueCount ?? 0) > 0">
+      <span class="kpi-label">Pending Follow-ups</span>
+      <strong class="kpi-value" data-kpi-followups>
+        {{ reminders()?.totalPendingCount ?? pipelineStats().pendingFollowUps }}
+      </strong>
+      @if ((reminders()?.overdueCount ?? 0) > 0) {
+        <span class="kpi-sub">{{ reminders()!.overdueCount }} overdue</span>
+      }
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">Offers Received</span>
+      <strong class="kpi-value is-success" data-kpi-offers>{{ pipelineStats().offersCount }}</strong>
+    </div>
+  </section>
+
+  <!-- Workspace Mode Switcher + Filter Toolbar -->
+  <section class="toolbar-card">
+    <div class="view-tabs" role="tablist" aria-label="Application workspace views">
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.is-active]="activeTab() === 'kanban'"
+        [attr.aria-selected]="activeTab() === 'kanban'"
+        data-tab-btn="kanban"
+        (click)="setActiveTab('kanban')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">view_kanban</span>
+        Kanban Board
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.is-active]="activeTab() === 'table'"
+        [attr.aria-selected]="activeTab() === 'table'"
+        data-tab-btn="table"
+        (click)="setActiveTab('table')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">table_rows</span>
+        Table View
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.is-active]="activeTab() === 'calendar'"
+        [attr.aria-selected]="activeTab() === 'calendar'"
+        data-tab-btn="calendar"
+        (click)="setActiveTab('calendar')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+        Calendar View
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="view-tab"
+        [class.is-active]="activeTab() === 'recruiter'"
+        [attr.aria-selected]="activeTab() === 'recruiter'"
+        data-tab-btn="recruiter"
+        (click)="setActiveTab('recruiter')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">support_agent</span>
+        Recruiter CRM &amp; Outreach
+        @if ((reminders()?.totalPendingCount ?? 0) > 0) {
+          <span class="tab-badge">{{ reminders()!.totalPendingCount }}</span>
+        }
+      </button>
+    </div>
+
+    @if (activeTab() !== 'recruiter') {
+      <div class="filters-row">
+        <input
+          type="search"
+          class="filter-input"
+          placeholder="Search company, role, location, or notes..."
+          data-apps-search
+          [ngModel]="searchQuery()"
+          (ngModelChange)="searchQuery.set($event)"
+        />
+        <select
+          class="filter-select"
+          aria-label="Filter by stage"
+          data-apps-stage-filter
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event)"
+        >
+          <option value="">All 10 Pipeline Stages</option>
+          @for (stage of stages; track stage.status) {
+            <option [value]="stage.status">{{ stage.label }}</option>
+          }
+        </select>
+        <label class="filter-toggle">
+          <input
+            type="checkbox"
+            [ngModel]="dueFollowUpOnly()"
+            (ngModelChange)="dueFollowUpOnly.set($event)"
+          />
+          <span>Pending Follow-up</span>
+        </label>
+        <label class="filter-toggle">
+          <input
+            type="checkbox"
+            [ngModel]="hasInterviewOnly()"
+            (ngModelChange)="hasInterviewOnly.set($event)"
+          />
+          <span>Has Interview</span>
+        </label>
+        @if (searchQuery() || statusFilter() || dueFollowUpOnly() || hasInterviewOnly()) {
+          <button type="button" class="btn-secondary-sm" (click)="resetFilters()">Reset</button>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Active Workspace View -->
+  @if (isLoading() && applications().length === 0 && activeTab() !== 'recruiter') {
+    <div class="loading-state" data-apps-loading>Loading your application pipeline...</div>
+  } @else {
+    @switch (activeTab()) {
+      @case ('kanban') {
+        <app-kanban-board
+          [applications]="filteredApplications()"
+          [transitioningUuid]="transitioningUuid()"
+          (selectApplication)="selectApplication($event)"
+          (moveStageRequested)="onStageMove($event)"
+        />
+      }
+      @case ('table') {
+        <app-applications-table
+          [applications]="filteredApplications()"
+          [transitioningUuid]="transitioningUuid()"
+          (selectApplication)="selectApplication($event)"
+          (moveStageRequested)="onStageMove($event)"
+        />
+      }
+      @case ('calendar') {
+        <app-applications-calendar
+          [applications]="filteredApplications()"
+          [reminders]="reminders()"
+          (selectApplication)="selectApplication($event)"
+          (selectRecruiter)="openRecruiterById($event)"
+          (markApplicationFollowUpDone)="handleCompleteApplicationFollowUp($event)"
+          (markRecruiterReminderDone)="handleCompleteRecruiterReminder($event)"
+        />
+      }
+      @case ('recruiter') {
+        <app-recruiter-crm
+          [applications]="applications()"
+          [preselectedApplicationUuid]="deepLinkedApplicationUuid()"
+          [preselectedRecruiterId]="deepLinkedRecruiterId()"
+          (openApplication)="selectApplication($event)"
+          (completeApplicationFollowUp)="handleCompleteApplicationFollowUp($event)"
+          (remindersUpdated)="refreshReminders()"
+        />
+      }
+    }
+  }
+
+  <!-- Detail Drawer -->
+  <app-application-detail-drawer
+    [application]="selectedApplication()"
+    [tailoredResumes]="tailoredResumes()"
+    [coverLetters]="coverLetters()"
+    [saving]="updatingUuid() !== null"
+    [transitioning]="transitioningUuid() !== null"
+    [deleting]="deletingUuid() !== null"
+    (close)="selectApplication(null)"
+    (saveDetails)="handleSaveApplicationDetails($event)"
+    (transitionStatus)="handleTransitionStatus($event)"
+    (deleteConfirmed)="handleDeleteApplication($event)"
+    (openRecruiterTab)="openRecruiterFromApplication($event)"
+  />
+
+  <!-- Create / Track Application Modal -->
+  @if (createModalOpen()) {
+    <div class="modal-backdrop" (click)="createModalOpen.set(false)"></div>
+    <section
+      class="create-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Track new job application"
+      data-apps-create-modal
+    >
+      <header class="modal-head">
+        <div>
+          <h2>Track Job Application</h2>
+          <p>Add an indexed role to your pipeline with initial stage, dates, and tailored document versions.</p>
+        </div>
+        <button type="button" class="close-btn" (click)="createModalOpen.set(false)" aria-label="Close">
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        @if (availableJobsToTrack().length === 0) {
+          <div class="empty-jobs-hint">
+            All fetched indexed jobs on your current page are already tracked, or no jobs are loaded yet. Visit <a routerLink="/jobs" class="inline-link">Discover Jobs</a> to fetch more roles.
+          </div>
+        }
+
+        <label class="form-field">
+          <span>Target Job Role</span>
+          <select
+            class="field-control"
+            data-create-job-select
+            [ngModel]="createJobId()"
+            (ngModelChange)="createJobId.set($event ? +$event : null)"
+          >
+            <option [ngValue]="null">Select a job posting...</option>
+            @for (job of availableJobsToTrack(); track job.id) {
+              <option [ngValue]="job.id">
+                {{ job.title }} — {{ job.companyName }} ({{ job.country }})
+              </option>
+            }
+          </select>
+        </label>
+
+        <div class="two-col">
+          <label class="form-field">
+            <span>Initial Pipeline Stage</span>
+            <select
+              class="field-control"
+              data-create-status-select
+              [ngModel]="createStatus()"
+              (ngModelChange)="createStatus.set($event)"
+            >
+              @for (stage of stages; track stage.status) {
+                <option [value]="stage.status">{{ stage.label }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>Applied Date (Optional)</span>
+            <input
+              type="date"
+              class="field-control"
+              data-create-applied-date
+              [ngModel]="createAppliedDate()"
+              (ngModelChange)="createAppliedDate.set($event)"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Next Interview (Optional)</span>
+            <input
+              type="datetime-local"
+              class="field-control"
+              data-create-interview-date
+              [ngModel]="createInterviewDate()"
+              (ngModelChange)="createInterviewDate.set($event)"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Follow-up Reminder Date</span>
+            <input
+              type="date"
+              class="field-control"
+              data-create-followup-date
+              [ngModel]="createFollowUpDate()"
+              (ngModelChange)="createFollowUpDate.set($event)"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Linked Tailored CV (Optional)</span>
+            <select
+              class="field-control"
+              [ngModel]="createResumeUuid()"
+              (ngModelChange)="createResumeUuid.set($event)"
+            >
+              <option value="">None linked yet</option>
+              @for (cv of tailoredResumes(); track cv.uuid) {
+                <option [value]="cv.uuid">{{ cv.title }} (v{{ cv.versionNumber }})</option>
+              }
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>Linked Cover Letter (Optional)</span>
+            <select
+              class="field-control"
+              [ngModel]="createCoverLetterUuid()"
+              (ngModelChange)="createCoverLetterUuid.set($event)"
+            >
+              <option value="">None linked yet</option>
+              @for (cl of coverLetters(); track cl.uuid) {
+                <option [value]="cl.uuid">{{ cl.title }} (v{{ cl.versionNumber }})</option>
+              }
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>Offered Salary (Optional)</span>
+            <input
+              type="number"
+              min="0"
+              class="field-control"
+              placeholder="e.g. 98000"
+              [ngModel]="createSalaryOffered()"
+              (ngModelChange)="createSalaryOffered.set($event)"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Currency (ISO)</span>
+            <input
+              type="text"
+              maxlength="3"
+              class="field-control"
+              [ngModel]="createCurrency()"
+              (ngModelChange)="createCurrency.set($event)"
+            />
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Notes</span>
+          <textarea
+            rows="3"
+            class="field-control"
+            placeholder="Referral contact, relocation package notes, interview focus..."
+            data-create-notes
+            [ngModel]="createNotes()"
+            (ngModelChange)="createNotes.set($event)"
+          ></textarea>
+        </label>
+      </div>
+
+      <footer class="modal-foot">
+        <button type="button" class="btn-secondary" (click)="createModalOpen.set(false)">Cancel</button>
+        <button
+          type="button"
+          class="btn-primary"
+          data-create-submit
+          [disabled]="isCreating() || !createJobId()"
+          (click)="submitCreateApplication()"
+        >
+          {{ isCreating() ? 'Adding...' : 'Add to Pipeline' }}
+        </button>
+      </footer>
+    </section>
+  }
+</div>
+

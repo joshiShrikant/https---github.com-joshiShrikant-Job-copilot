@@ -1,0 +1,18 @@
+@let cfg = resolved();
+<span
+  class="status-badge"
+  [class.size-md]="size() === 'md'"
+  [class.tone-success]="cfg.tone === 'success'"
+  [class.tone-brand]="cfg.tone === 'brand'"
+  [class.tone-warning]="cfg.tone === 'warning'"
+  [class.tone-danger]="cfg.tone === 'danger'"
+  [class.tone-neutral]="cfg.tone === 'neutral'"
+  [attr.data-tone]="cfg.tone"
+  [attr.title]="tooltip() || cfg.label"
+>
+  @if (cfg.icon) {
+    <span class="material-symbols-outlined badge-icon" aria-hidden="true">{{ cfg.icon }}</span>
+  }
+  <span class="badge-label">{{ cfg.label }}</span>
+</span>
+

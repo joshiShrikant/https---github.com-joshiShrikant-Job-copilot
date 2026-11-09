@@ -1,0 +1,51 @@
+<section class="dash-card">
+  <div class="dash-card-head">
+    <div>
+      <h2>Candidate Readiness &amp; Onboarding</h2>
+      <p>Prepare your profile, approved CV, and sponsorship targets for automated matching.</p>
+    </div>
+    <span class="status-pill" [class.is-good]="completedStepsCount() === steps().length">
+      {{ completedStepsCount() }} / {{ steps().length }} Ready
+    </span>
+  </div>
+
+  <div class="progress-block">
+    <div class="progress-meta">
+      <span>Profile Completeness</span>
+      <strong>{{ readiness().profileCompletenessPercent }}%</strong>
+    </div>
+    <div
+      class="progress-track"
+      role="progressbar"
+      [attr.aria-valuenow]="readiness().profileCompletenessPercent"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <div class="progress-fill" [style.width.%]="readiness().profileCompletenessPercent"></div>
+    </div>
+  </div>
+
+  <ul class="checklist">
+    @for (step of steps(); track step.id) {
+      <li class="check-item" [class.is-done]="step.completed">
+        <div class="check-leading">
+          <span class="material-symbols-outlined check-icon" aria-hidden="true">
+            {{ step.completed ? 'check_circle' : 'radio_button_unchecked' }}
+          </span>
+          <div class="check-copy">
+            <strong>{{ step.label }}</strong>
+            <span>{{ step.detail }}</span>
+          </div>
+        </div>
+        <a
+          class="card-link-btn"
+          [routerLink]="step.route"
+          [queryParams]="step.queryParams ?? null"
+        >
+          {{ step.ctaLabel }}
+        </a>
+      </li>
+    }
+  </ul>
+</section>
+

@@ -1,0 +1,132 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.preview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.preview-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tone-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background-color: var(--color-brand-soft);
+  border: 1px solid var(--color-brand-border);
+  color: var(--color-brand-primary);
+}
+
+.preview-hint {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.letter-sheet {
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-top: 6px solid #2563eb;
+  border-radius: var(--radius-sm);
+  padding: 36px 42px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  line-height: 1.62;
+
+  &.is-academic {
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+}
+
+.letter-sender-header {
+  border-bottom: 1px solid #cbd5e1;
+  padding-bottom: 14px;
+
+  h1 {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+  }
+}
+
+.sender-headline {
+  margin: 3px 0 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.sender-contact {
+  margin: 5px 0 0;
+  font-size: 0.81rem;
+  color: #475569;
+}
+
+.letter-date {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.letter-recipient {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.89rem;
+  color: #0f172a;
+}
+
+.recipient-loc {
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.letter-subject {
+  margin: 8px 0 0;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e3a8a;
+}
+
+.letter-body {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.letter-paragraph {
+  margin: 0;
+  font-size: 0.91rem;
+  color: #0f172a;
+  white-space: pre-line;
+}
+
+.letter-empty {
+  margin: 0;
+  color: #64748b;
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 720px) {
+  .letter-sheet {
+    padding: 22px 18px;
+  }
+}
+

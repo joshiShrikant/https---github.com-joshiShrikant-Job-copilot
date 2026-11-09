@@ -1,0 +1,48 @@
+<div class="preview-toolbar">
+  <div class="preview-meta">
+    <span class="tone-badge">{{ toneLabel() }} Tone Preview</span>
+    <span class="preview-hint">A4 formal business letter layout · Live reflection of current draft</span>
+  </div>
+</div>
+
+<article
+  class="letter-sheet"
+  [class.is-academic]="tone() === 'ACADEMIC'"
+  data-cover-letter-sheet
+>
+  <header class="letter-sender-header">
+    <h1>{{ metadata()?.candidateFullName || 'Candidate' }}</h1>
+    @if (metadata()?.candidateHeadline; as headline) {
+      <p class="sender-headline">{{ headline }}</p>
+    }
+    @if (contactSegments().length > 0) {
+      <p class="sender-contact">{{ contactSegments().join(' · ') }}</p>
+    }
+  </header>
+
+  <div class="letter-date">{{ formattedDate() }}</div>
+
+  <div class="letter-recipient">
+    <strong>Hiring Team</strong>
+    @if (companyName()) {
+      <span>{{ companyName() }}</span>
+    }
+    @if (jobCountry()) {
+      <span class="recipient-loc">{{ jobCountry() }}</span>
+    }
+    @if (jobTitle()) {
+      <p class="letter-subject">Re: Application for {{ jobTitle() }}</p>
+    }
+  </div>
+
+  <div class="letter-body">
+    @if (paragraphs().length === 0) {
+      <p class="letter-empty">Letter prose will appear here as you compose or generate a draft.</p>
+    } @else {
+      @for (paragraph of paragraphs(); track $index) {
+        <p class="letter-paragraph">{{ paragraph }}</p>
+      }
+    }
+  </div>
+</article>
+

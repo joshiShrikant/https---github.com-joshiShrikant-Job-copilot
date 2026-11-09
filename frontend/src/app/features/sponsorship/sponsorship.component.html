@@ -1,0 +1,558 @@
+<div class="sponsorship-page">
+  <app-page-header
+    title="Visa Sponsorship Intelligence"
+    subtitle="Verify employer sponsorship eligibility across 14 European countries, check the Netherlands IND register, and separate employer accreditation from vacancy-level offers."
+    icon="verified_user"
+    badge="14 Countries"
+  >
+    <div page-actions class="header-actions">
+      @if (isAdmin()) {
+        <button
+          type="button"
+          class="toolbar-btn"
+          data-sponsorship-admin-sync
+          [disabled]="isSyncingInd()"
+          (click)="triggerAdminIndSync()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+          <span>{{ isSyncingInd() ? 'Syncing IND...' : 'Sync IND Register' }}</span>
+        </button>
+      }
+      <a routerLink="/companies" class="toolbar-btn">
+        <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+        <span>Companies</span>
+      </a>
+      <a routerLink="/jobs" class="toolbar-btn primary-link">
+        <span class="material-symbols-outlined" aria-hidden="true">work</span>
+        <span>Discover Jobs</span>
+      </a>
+    </div>
+  </app-page-header>
+
+  <section class="guardrail-banner" role="note" data-sponsorship-guardrail>
+    <span class="material-symbols-outlined" aria-hidden="true">policy</span>
+    <div>
+      <strong>Critical Sponsorship Rule:</strong>
+      Recognized sponsor status (such as Netherlands IND accreditation) belongs to the legal employer and
+      <strong>never assumes every vacancy offers visa sponsorship</strong>. Always inspect role-level wording and salary thresholds.
+    </div>
+  </section>
+
+  @if (errorMessage()) {
+    <div class="feedback-banner error" role="alert" data-sponsorship-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (syncNotice()) {
+    <div class="feedback-banner info" role="status" data-sponsorship-sync-notice>
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <span>{{ syncNotice() }}</span>
+    </div>
+  }
+
+  <div class="verifier-grid">
+    <section class="panel verifier-form-panel" aria-label="Check employer sponsorship">
+      <div class="panel-head">
+        <h2>Verify Employer &amp; Vacancy</h2>
+        <span class="meta-chip">Official registers + posting signals</span>
+      </div>
+
+      <form class="verifier-form" (submit)="$event.preventDefault(); verifyCurrentCompany()">
+        <div class="form-row">
+          <label class="field-label" for="sponsor-company-input">Company Name</label>
+          <input
+            id="sponsor-company-input"
+            type="text"
+            class="text-input"
+            placeholder="e.g., Adyen N.V., ASML, Booking.com..."
+            [value]="companyInput()"
+            (input)="onCompanyInput($any($event.target).value)"
+            data-sponsorship-company-input
+          />
+        </div>
+
+        <div class="form-row">
+          <label class="field-label" for="sponsor-country-select">Target Country (14 Supported)</label>
+          <select
+            id="sponsor-country-select"
+            class="select-input"
+            [value]="countryInput()"
+            (change)="onCountrySelect($any($event.target).value)"
+            data-sponsorship-country-select
+          >
+            @for (country of countrySelectOptions(); track country) {
+              <option [value]="country">{{ country }}</option>
+            }
+          </select>
+        </div>
+
+        @if (jobIdInput(); as linkedJobId) {
+          <div class="linked-job-pill" data-sponsorship-linked-job>
+            <span>Linked Vacancy #{{ linkedJobId }}</span>
+            <button type="button" class="mini-clear-btn" (click)="clearLinkedJob()">Unlink</button>
+          </div>
+        }
+
+        <div class="form-row">
+          <label class="field-label" for="sponsor-posting-text">
+            Optional Job Description / Vacancy Snippet
+          </label>
+          <textarea
+            id="sponsor-posting-text"
+            rows="3"
+            class="textarea-input"
+            placeholder="Paste sponsorship notes or restrictions (e.g., 'Unable to sponsor visas' or 'EU Blue Card support provided')..."
+            [value]="postingTextInput()"
+            (input)="onPostingTextInput($any($event.target).value)"
+            data-sponsorship-posting-input
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="primary-btn"
+            [disabled]="isVerifying()"
+            data-sponsorship-verify-btn
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">fact_check</span>
+            <span>{{ isVerifying() ? 'Verifying...' : 'Verify Sponsorship Status' }}</span>
+          </button>
+        </div>
+      </form>
+
+      @if (selectedCountryProfile(); as guide) {
+        <div class="country-mini-guide" data-sponsorship-selected-guide>
+          <div class="guide-head">
+            <strong>{{ guide.country }} ({{ guide.isoCode }}) Rules</strong>
+            @if (guide.officialRegisterAvailable) {
+              <span class="mini-tag is-register">Official Register</span>
+            } @else {
+              <span class="mini-tag">Statutory Permit</span>
+            }
+          </div>
+          <p class="guide-text">{{ guide.guidanceSummary }}</p>
+          <div class="pathway-chips">
+            @for (pathway of guide.visaPathways; track pathway) {
+              <span class="pathway-chip">{{ pathway }}</span>
+            }
+          </div>
+          @if (isSafeUrl(guide.publicRegisterUrl)) {
+            <a
+              class="external-link"
+              [href]="guide.publicRegisterUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>{{ guide.registryName }}</span>
+              <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+            </a>
+          }
+        </div>
+      }
+    </section>
+
+    <section class="panel result-panel" aria-live="polite" data-sponsorship-result>
+      @if (verificationResult(); as res) {
+        <div class="result-head">
+          <div>
+            <span class="kicker">{{ res.country }} ({{ res.countryIsoCode }}) · Verification #{{ res.verificationId }}</span>
+            <h2>{{ res.officialName || res.companyName }}</h2>
+            @if (res.registryIdentifier) {
+              <p class="sub-id">{{ res.registrySource }} · {{ res.registryIdentifier }}</p>
+            }
+          </div>
+          <div class="result-badges">
+            <app-status-badge [visaStatus]="res.status" size="md" />
+            <app-status-badge [confidenceLevel]="res.confidenceLevel" size="sm" />
+          </div>
+        </div>
+
+        <div class="caveat-box" data-sponsorship-result-caveat>
+          <span class="material-symbols-outlined" aria-hidden="true">warning_amber</span>
+          <div>
+            <strong>Vacancy Check ({{ res.vacancyStatusLabel }}):</strong>
+            <span>{{ res.vacancyCaveat }}</span>
+          </div>
+        </div>
+
+        @if (res.evidenceNotes) {
+          <p class="result-notes">{{ res.evidenceNotes }}</p>
+        }
+
+        <dl class="facts-grid">
+          <div>
+            <dt>Employer Accredited</dt>
+            <dd>{{ res.companyRecognizedSponsor ? 'Yes (Official Record)' : 'Not Confirmed' }}</dd>
+          </div>
+          <div>
+            <dt>Vacancy Confirmed</dt>
+            <dd>{{ res.vacancySponsorshipConfirmed ? 'Explicitly Mentioned' : 'Not Confirmed (Never Assumed)' }}</dd>
+          </div>
+          <div>
+            <dt>Verified On</dt>
+            <dd [attr.title]="res.verifiedAt">{{ res.verifiedAt | date:'medium' }}</dd>
+          </div>
+        </dl>
+
+        @if (res.evidenceSignals.length > 0) {
+          <div class="signals-block">
+            <h3>Evidence Signals</h3>
+            <ul>
+              @for (signalText of res.evidenceSignals; track $index) {
+                <li>{{ signalText }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="result-footer">
+          @if (isSafeUrl(res.sourceUrl)) {
+            <a
+              class="external-link"
+              [href]="res.sourceUrl!"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span>Official Source Portal</span>
+              <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+            </a>
+          }
+          <a
+            class="external-link"
+            [routerLink]="['/companies']"
+            [queryParams]="res.companyId ? { companyId: res.companyId } : { query: res.companyName }"
+            data-sponsorship-company-link
+          >
+            <span>Employer Profile</span>
+            <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+          </a>
+          <span class="muted-meta">Last checked {{ res.verifiedAt | timeAgo }}</span>
+        </div>
+      } @else {
+        <div class="empty-result-state">
+          <span class="material-symbols-outlined" aria-hidden="true">shield_with_heart</span>
+          <h3>Check Any Employer Across 14 European Countries</h3>
+          <p>
+            Enter a company name and country to verify official sponsor records, inspect evidence signals,
+            detect role-level exclusions, and record an audit snapshot in your verification history.
+          </p>
+          <div class="legend-grid" data-sponsorship-legend>
+            @for (item of statusLegend; track item.status) {
+              <div class="legend-item">
+                <app-status-badge [visaStatus]="item.status" size="sm" />
+                <span>{{ item.summary }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  </div>
+
+  <nav class="tab-bar" aria-label="Sponsorship intelligence sections">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'history'"
+      (click)="selectTab('history')"
+      data-sponsorship-tab="history"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">history</span>
+      <span>Verification History</span>
+      @if (historyPage(); as hp) {
+        <span class="count-pill">{{ hp.totalElements }}</span>
+      }
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'countries'"
+      (click)="selectTab('countries')"
+      data-sponsorship-tab="countries"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">public</span>
+      <span>Country Sponsorship Rules (14)</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'ind-registry'"
+      (click)="selectTab('ind-registry')"
+      data-sponsorship-tab="ind-registry"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">account_balance</span>
+      <span>Netherlands IND Register</span>
+      @if (indRegistryPage(); as ip) {
+        <span class="count-pill">{{ ip.totalElements }}</span>
+      }
+    </button>
+  </nav>
+
+  @if (activeTab() === 'history') {
+    <section class="panel" data-sponsorship-history-panel>
+      <div class="panel-head">
+        <h2>Verification History</h2>
+        <form class="inline-filters" (submit)="$event.preventDefault(); onHistoryFilterSubmit()">
+          <input
+            type="text"
+            class="text-input compact"
+            placeholder="Filter by company..."
+            [value]="historyCompanyFilter()"
+            (input)="historyCompanyFilter.set($any($event.target).value)"
+            data-history-filter-company
+          />
+          <select
+            class="select-input compact"
+            [value]="historyCountryFilter()"
+            (change)="historyCountryFilter.set($any($event.target).value)"
+            data-history-filter-country
+          >
+            <option value="">All 14 Countries</option>
+            @for (country of countrySelectOptions(); track country) {
+              <option [value]="country">{{ country }}</option>
+            }
+          </select>
+          <button type="submit" class="toolbar-btn">Filter</button>
+          <button type="button" class="toolbar-btn" (click)="resetHistoryFilters()">Reset</button>
+        </form>
+      </div>
+
+      @if (isLoadingHistory()) {
+        <p class="loading-copy">Loading verification history...</p>
+      } @else if (historyPage()?.content?.length) {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Company</th>
+                <th>Country</th>
+                <th>Status</th>
+                <th>Confidence</th>
+                <th>Evidence</th>
+                <th>Verified</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of historyPage()!.content; track item.id) {
+                <tr>
+                  <td>
+                    <strong>{{ item.officialRegisteredName || item.companyName }}</strong>
+                    @if (item.registryIdentifier) {
+                      <div class="sub-cell">{{ item.registryIdentifier }}</div>
+                    }
+                  </td>
+                  <td>{{ item.country }} ({{ item.countryIsoCode }})</td>
+                  <td>
+                    <app-status-badge [visaStatus]="item.status" size="sm" />
+                  </td>
+                  <td>
+                    <app-status-badge [confidenceLevel]="item.confidenceLevel" size="sm" />
+                  </td>
+                  <td class="evidence-cell">{{ item.evidenceSummary }}</td>
+                  <td [attr.title]="item.verifiedAt">{{ item.verifiedAt | timeAgo }}</td>
+                  <td>
+                    @if (isSafeUrl(item.sourceUrl)) {
+                      <a
+                        class="external-link"
+                        [href]="item.sourceUrl!"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Official URL
+                      </a>
+                    } @else {
+                      <span>—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (historyPage()!.totalPages > 1) {
+          <div class="pager-row">
+            <button
+              type="button"
+              class="toolbar-btn"
+              [disabled]="!historyPage()!.hasPrevious"
+              (click)="goToHistoryPage(historyPageIndex() - 1)"
+            >
+              Previous
+            </button>
+            <span>Page {{ historyPage()!.pageNumber + 1 }} of {{ historyPage()!.totalPages }}</span>
+            <button
+              type="button"
+              class="toolbar-btn"
+              [disabled]="!historyPage()!.hasNext"
+              (click)="goToHistoryPage(historyPageIndex() + 1)"
+            >
+              Next
+            </button>
+          </div>
+        }
+      } @else {
+        <p class="empty-copy">No verification checks recorded yet matching these filters.</p>
+      }
+    </section>
+  }
+
+  @if (activeTab() === 'countries') {
+    <section class="panel" data-sponsorship-countries-panel>
+      <div class="panel-head">
+        <h2>Country Sponsorship Intelligence (14 Countries)</h2>
+        @if (isLoadingCountries()) {
+          <span class="loading-copy">Refreshing...</span>
+        }
+      </div>
+
+      <div class="country-cards-grid">
+        @for (profile of countries(); track profile.isoCode) {
+          <article class="country-card" [attr.data-country-card]="profile.isoCode">
+            <div class="country-card-head">
+              <div>
+                <h3>{{ profile.country }}</h3>
+                <span class="sub-cell">{{ profile.primaryAuthority }}</span>
+              </div>
+              <span class="mini-tag" [class.is-register]="profile.officialRegisterAvailable">
+                {{ profile.officialRegisterAvailable ? 'Official Framework' : 'Per-Offer Permit' }}
+              </span>
+            </div>
+
+            <p class="guide-text">{{ profile.guidanceSummary }}</p>
+
+            <div class="pathway-chips">
+              @for (pathway of profile.visaPathways; track pathway) {
+                <span class="pathway-chip">{{ pathway }}</span>
+              }
+            </div>
+
+            <p class="warning-micro">{{ profile.vacancyRuleWarning }}</p>
+
+            <div class="country-card-foot">
+              @if (isSafeUrl(profile.officialSourceUrl)) {
+                <a
+                  class="external-link"
+                  [href]="profile.officialSourceUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>Official Source</span>
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                </a>
+              }
+              <button
+                type="button"
+                class="toolbar-btn"
+                (click)="applyCountryQuickCheck(profile.country)"
+              >
+                Check Company
+              </button>
+            </div>
+          </article>
+        }
+      </div>
+    </section>
+  }
+
+  @if (activeTab() === 'ind-registry') {
+    <section class="panel" data-sponsorship-ind-panel>
+      <div class="panel-head">
+        <div>
+          <h2>Netherlands IND Recognised Sponsors</h2>
+          @if (indSyncStatus(); as syncInfo) {
+            <p class="sub-cell">
+              Status: <strong>{{ formatSyncStatusLabel(syncInfo.status) }}</strong>
+              · Active records: {{ syncInfo.activeEntriesCount }}
+              @if (syncInfo.errorMessage && syncInfo.status !== 'SUCCESS') {
+                · {{ syncInfo.errorMessage }}
+              }
+            </p>
+          }
+        </div>
+        <form class="inline-filters" (submit)="$event.preventDefault(); onIndSearchSubmit()">
+          <input
+            type="text"
+            class="text-input compact"
+            placeholder="Search organisation or KvK..."
+            [value]="indQueryFilter()"
+            (input)="indQueryFilter.set($any($event.target).value)"
+            data-ind-search-input
+          />
+          <button type="submit" class="toolbar-btn">Search</button>
+        </form>
+      </div>
+
+      @if (isLoadingIndRegistry()) {
+        <p class="loading-copy">Searching synced IND register...</p>
+      } @else if (indRegistryPage()?.content?.length) {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Official Registered Name</th>
+                <th>KvK / Identifier</th>
+                <th>License Status</th>
+                <th>Synced</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of indRegistryPage()!.content; track entry.id) {
+                <tr>
+                  <td><strong>{{ entry.officialName }}</strong></td>
+                  <td>{{ entry.registryIdentifier || '—' }}</td>
+                  <td>{{ formatRecordStatus(entry.status) }}</td>
+                  <td>{{ entry.syncedAt | timeAgo }}</td>
+                  <td>
+                    <button
+                      type="button"
+                      class="toolbar-btn"
+                      (click)="prefillFromIndEntry(entry.officialName)"
+                    >
+                      Verify Employer
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (indRegistryPage()!.totalPages > 1) {
+          <div class="pager-row">
+            <button
+              type="button"
+              class="toolbar-btn"
+              [disabled]="!indRegistryPage()!.hasPrevious"
+              (click)="goToIndPage(indPageIndex() - 1)"
+            >
+              Previous
+            </button>
+            <span>Page {{ indRegistryPage()!.pageNumber + 1 }} of {{ indRegistryPage()!.totalPages }}</span>
+            <button
+              type="button"
+              class="toolbar-btn"
+              [disabled]="!indRegistryPage()!.hasNext"
+              (click)="goToIndPage(indPageIndex() + 1)"
+            >
+              Next
+            </button>
+          </div>
+        }
+      } @else {
+        <p class="empty-copy">
+          No active synced IND entries stored yet. Administrators can run official IND sync above when upstream access is permitted,
+          or you can still verify Dutch employers using vacancy postings and company intelligence.
+        </p>
+      }
+    </section>
+  }
+</div>
+

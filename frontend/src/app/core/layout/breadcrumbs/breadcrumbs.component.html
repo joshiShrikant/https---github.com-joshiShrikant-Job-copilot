@@ -1,0 +1,30 @@
+<nav aria-label="Breadcrumb" class="breadcrumbs">
+  <ol class="breadcrumb-list">
+    @for (crumb of items(); track crumb.label; let isFirst = $first; let isLast = $last) {
+      <li
+        class="breadcrumb-item"
+        [class.is-root]="isFirst"
+        [class.is-intermediate]="!isFirst && !isLast"
+        [class.is-current]="crumb.isCurrent || isLast"
+      >
+        @if (!isFirst) {
+          <span class="material-symbols-outlined separator" aria-hidden="true">chevron_right</span>
+        }
+
+        @if (crumb.route && !crumb.isCurrent && !isLast) {
+          <a [routerLink]="crumb.route" class="breadcrumb-link">
+            @if (isFirst) {
+              <span class="material-symbols-outlined root-icon" aria-hidden="true">flight_takeoff</span>
+            }
+            <span class="crumb-label">{{ crumb.label }}</span>
+          </a>
+        } @else if (crumb.isCurrent || isLast) {
+          <span class="breadcrumb-current" aria-current="page">{{ crumb.label }}</span>
+        } @else {
+          <span class="breadcrumb-section">{{ crumb.label }}</span>
+        }
+      </li>
+    }
+  </ol>
+</nav>
+

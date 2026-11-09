@@ -1,0 +1,784 @@
+@let s = summaryJob();
+@let d = detail();
+@if (s || d) {
+  <aside class="inspector-column" aria-label="Selected job details">
+    <div class="inspector-card" data-jobs-inspector>
+      <div class="inspector-head">
+        <div class="inspector-title-wrap">
+          <span class="preview-kicker">Role Intelligence</span>
+          <h2>{{ effectiveTitle() }}</h2>
+          <p>{{ effectiveCompany() }} · {{ effectiveLocation() }}</p>
+        </div>
+        <app-match-score-gauge
+          [score]="d?.matchPercentage ?? s?.matchPercentage ?? null"
+          size="lg"
+          [showLabel]="true"
+          label="Match fit"
+        />
+      </div>
+
+      <div class="inspector-badges">
+        @if (d?.sponsorshipBreakdown?.detailedStatus; as detailed) {
+          <app-status-badge [visaStatus]="detailed" size="md" />
+        } @else {
+          <app-status-badge [sponsorStatus]="d?.sponsorStatus ?? s?.sponsorStatus ?? null" size="md" />
+        }
+        <app-status-badge [workArrangement]="d?.workArrangement ?? s?.workArrangement ?? null" size="md" />
+        @if (employmentSummary()) {
+          <span class="badge-pill">{{ employmentSummary() }}</span>
+        }
+        @if (effectiveHasApplied()) {
+          <span class="badge-pill is-applied" data-inspector-applied>
+            <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+            <span>Applied</span>
+          </span>
+        }
+        @if (effectiveHidden()) {
+          <span class="badge-pill is-hidden">
+            <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+            <span>Hidden</span>
+          </span>
+        }
+      </div>
+
+      <div class="inspector-actions">
+        <button
+          type="button"
+          class="action-btn"
+          [class.is-active]="effectiveSaved()"
+          [disabled]="actionBusy()"
+          data-inspector-action="save"
+          (click)="saveToggle.emit()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ effectiveSaved() ? 'bookmark_added' : 'bookmark_border' }}
+          </span>
+          <span>{{ effectiveSaved() ? 'Saved' : 'Save' }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="action-btn"
+          [class.is-active]="effectiveInterested()"
+          [disabled]="actionBusy()"
+          data-inspector-action="interested"
+          (click)="interestedToggle.emit()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
+          <span>{{ effectiveInterested() ? 'Interested' : 'Mark fit' }}</span>
+        </button>
+
+        <button
+          type="button"
+          class="action-btn"
+          [class.is-active]="effectiveHidden()"
+          [disabled]="actionBusy()"
+          data-inspector-action="hide-toggle"
+          (click)="hideToggle.emit()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ effectiveHidden() ? 'visibility' : 'visibility_off' }}
+          </span>
+          <span>{{ effectiveHidden() ? 'Unhide' : 'Hide' }}</span>
+        </button>
+
+        <a
+          class="action-btn is-tailor-cta"
+          [routerLink]="['/resume-builder']"
+          [queryParams]="{ jobId: d?.id ?? s?.id }"
+          data-inspector-action="tailor-resume"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+          <span>Tailor Resume</span>
+        </a>
+
+        <a
+          class="action-btn is-tailor-cta"
+          [routerLink]="['/cover-letter']"
+          [queryParams]="{ jobId: d?.id ?? s?.id }"
+          data-inspector-action="cover-letter"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">article</span>
+          <span>Cover Letter</span>
+        </a>
+
+        <a
+          class="action-btn is-tailor-cta"
+          [routerLink]="['/applications']"
+          [queryParams]="{ jobId: d?.id ?? s?.id }"
+          data-inspector-action="track-application"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">view_kanban</span>
+          <span>Track Pipeline</span>
+        </a>
+
+        <a
+          class="action-btn is-tailor-cta"
+          [routerLink]="['/interview-prep']"
+          [queryParams]="{ jobId: d?.id ?? s?.id }"
+          data-inspector-action="interview-prep"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">psychology</span>
+          <span>Interview Prep</span>
+        </a>
+
+        <button
+          type="button"
+          class="apply-primary-btn"
+          [disabled]="actionBusy()"
+          data-inspector-action="apply"
+          (click)="applyRequested.emit()"
+        >
+          <span>Apply Externally</span>
+          <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+        </button>
+      </div>
+
+      @if (loading()) {
+        <div class="inspector-status-bar info" role="status" data-inspector-loading>
+          <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+          <span>Loading full description, registry records &amp; match breakdown...</span>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="inspector-status-bar error" role="alert" data-inspector-error>
+          <span class="material-symbols-outlined" aria-hidden="true">error</span>
+          <span class="error-copy">{{ errorMessage() }}</span>
+          <button
+            type="button"
+            class="retry-link-btn"
+            data-inspector-action="retry"
+            (click)="retryDetail.emit()"
+          >
+            Retry
+          </button>
+        </div>
+      }
+
+      <dl class="inspector-facts">
+        <div>
+          <dt>Compensation</dt>
+          <dd>
+            {{
+              (d?.salaryMin ?? s?.salaryMin ?? null)
+                | salaryRange:(d?.salaryMax ?? s?.salaryMax ?? null):(d?.salaryCurrency ?? s?.salaryCurrency ?? null):(d?.salaryPeriod ?? s?.salaryPeriod ?? null):false
+            }}
+          </dd>
+        </div>
+        <div>
+          <dt>Posted</dt>
+          <dd>{{ (d?.postedAt ?? s?.postedAt ?? '') | timeAgo }}</dd>
+        </div>
+        <div>
+          <dt>Source</dt>
+          <dd>{{ d?.sourceProvider ?? s?.sourceProvider ?? '—' }}</dd>
+        </div>
+      </dl>
+
+      @if (d?.sponsorshipBreakdown; as sb) {
+        <section class="intel-box" data-inspector-sponsorship>
+          <div class="intel-head">
+            <h4>Visa Sponsorship Intelligence</h4>
+            <div class="intel-head-actions">
+              @if (sb.vacancyStatusLabel) {
+                <span class="version-pill" data-inspector-vacancy-status>
+                  Vacancy: {{ sb.vacancyStatusLabel }}
+                </span>
+              }
+              <app-status-badge [confidenceLevel]="sb.confidenceLevel" size="sm" />
+            </div>
+          </div>
+          <p class="intel-summary">{{ sb.summary }}</p>
+
+          @if (sb.vacancyCaveat) {
+            <p class="inspector-status-bar warning" data-inspector-vacancy-caveat>
+              <span class="material-symbols-outlined" aria-hidden="true">info</span>
+              <span>{{ sb.vacancyCaveat }}</span>
+            </p>
+          }
+
+          @if (sb.evidenceSignals.length > 0) {
+            <ul class="signal-list">
+              @for (signalText of sb.evidenceSignals; track $index) {
+                <li>{{ signalText }}</li>
+              }
+            </ul>
+          }
+
+          @if (sb.countryGuideSummary) {
+            <p class="intel-subnote">{{ sb.countryGuideSummary }}</p>
+          }
+
+          <div class="intel-head-actions">
+            @if (isSafeHttpUrl(sb.officialRegisterUrl)) {
+              <a
+                class="external-mini-link"
+                [href]="sb.officialRegisterUrl!"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Country official source
+                <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              </a>
+            }
+            <a
+              class="external-mini-link"
+              [routerLink]="['/sponsorship']"
+              [queryParams]="{
+                companyName: effectiveCompany(),
+                country: d?.country ?? s?.country ?? '',
+                jobId: d?.id ?? s?.id ?? null
+              }"
+            >
+              Verify in Visa Sponsorship
+              <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+            </a>
+            @if ((d && d.company) || effectiveCompany()) {
+              <a
+                class="external-mini-link"
+                [routerLink]="['/companies']"
+                [queryParams]="(d && d.company) ? { companyId: d.company.id } : { query: effectiveCompany() }"
+                data-inspector-company-link
+              >
+                Employer Profile
+                <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+              </a>
+            }
+          </div>
+
+          @if (sb.registryRecords.length > 0) {
+            <div class="registry-list">
+              @for (rec of sb.registryRecords; track rec.id) {
+                <div class="registry-card">
+                  <div class="registry-top">
+                    <strong>{{ rec.officialRegisteredName }}</strong>
+                    <span class="registry-status">{{ formatRegistryStatus(rec.status) }}</span>
+                  </div>
+                  <div class="registry-meta">
+                    <span>{{ rec.country }} · {{ rec.registrySource }}</span>
+                    <span>ID: {{ rec.registryIdentifier }}</span>
+                  </div>
+                  @if (isSafeHttpUrl(rec.sourceUrl)) {
+                    <a
+                      class="external-mini-link"
+                      [href]="rec.sourceUrl!"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Verify official register
+                      <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                    </a>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      @if (d?.matchBreakdown; as mb) {
+        <section class="intel-box" data-inspector-match>
+          <div class="intel-head">
+            <h4>Deterministic Compatibility Breakdown</h4>
+            <div class="intel-head-actions">
+              @if (mb.matchPercentage !== null || mb.finalScore !== null) {
+                <span class="score-pill">
+                  {{ mb.matchPercentage ?? mb.finalScore }}% composite
+                </span>
+              }
+              @if (mb.deterministicScore !== null && mb.deterministicScore !== undefined) {
+                <span class="score-pill is-det">
+                  {{ mb.deterministicScore }}% deterministic
+                </span>
+              }
+              <button
+                type="button"
+                class="mini-action-btn"
+                data-inspector-action="recalculate-match"
+                [disabled]="matchBusy()"
+                (click)="calculateMatchRequested.emit()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">calculate</span>
+                <span>{{ matchBusy() ? 'Scoring...' : 'Recalculate' }}</span>
+              </button>
+            </div>
+          </div>
+
+          @if (mb.experienceCompatibility) {
+            <div class="experience-fit-banner" data-inspector-experience-fit>
+              <span class="fit-label">Experience compatibility</span>
+              <strong class="fit-value">{{ mb.experienceCompatibility }}</strong>
+            </div>
+          }
+
+          @if (matchDimensionBars().length > 0) {
+            <div class="dimension-grid">
+              @for (bar of matchDimensionBars(); track bar.label) {
+                <div class="dimension-row">
+                  <div class="dimension-meta">
+                    <span>{{ bar.label }}</span>
+                    <strong>{{ bar.value }}%</strong>
+                  </div>
+                  <div class="dimension-track">
+                    <div class="dimension-fill" [style.width.%]="bar.value"></div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @if (mb.matchingSkills.length > 0 || mb.missingSkills.length > 0) {
+            <div class="gap-groups">
+              @if (mb.matchingSkills.length > 0) {
+                <div>
+                  <span class="gap-label">Matching skills</span>
+                  <div class="inspector-skills">
+                    @for (skill of mb.matchingSkills; track $index) {
+                      <span class="skill-chip is-match">{{ skill }}</span>
+                    }
+                  </div>
+                </div>
+              }
+              @if (mb.missingSkills.length > 0) {
+                <div>
+                  <span class="gap-label">Missing skills (rule-based)</span>
+                  <div class="inspector-skills">
+                    @for (skill of mb.missingSkills; track $index) {
+                      <span class="skill-chip is-gap">{{ skill }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @if (mb.recommendationReasons && mb.recommendationReasons.length > 0) {
+            <div class="reasons-block" data-inspector-reasons>
+              <span class="gap-label">Recommendation reasons</span>
+              <ul class="signal-list">
+                @for (reason of mb.recommendationReasons; track $index) {
+                  <li>{{ reason }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </section>
+      } @else if (d && !loading()) {
+        <section class="intel-box subtle-hint">
+          <div class="intel-head">
+            <h4>Deterministic Match Breakdown</h4>
+            <button
+              type="button"
+              class="mini-action-btn is-primary"
+              data-inspector-action="calculate-match"
+              [disabled]="matchBusy()"
+              (click)="calculateMatchRequested.emit()"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">calculate</span>
+              <span>{{ matchBusy() ? 'Calculating...' : 'Calculate Match Score' }}</span>
+            </button>
+          </div>
+          <p class="intel-summary">
+            Run deterministic scoring now, or complete your
+            <a routerLink="/profile" class="inline-link">Candidate Profile</a> skills and
+            <a routerLink="/settings" class="inline-link">Target Criteria</a> to refine weighted compatibility.
+          </p>
+        </section>
+      }
+
+      @if (hasAiSemanticMatch() && d?.matchBreakdown; as mb) {
+        <section class="intel-box" data-inspector-ai-match>
+          <div class="intel-head">
+            <h4>AI Semantic Match Comparison</h4>
+            <div class="intel-head-actions">
+              @if (mb.aiModelUsed) {
+                <span class="model-tag">
+                  {{ mb.aiProvider ? mb.aiProvider + ' · ' : '' }}{{ mb.aiModelUsed }}
+                </span>
+              }
+              <button
+                type="button"
+                class="mini-action-btn"
+                data-inspector-action="evaluate-ai-match"
+                [disabled]="aiMatchBusy()"
+                (click)="evaluateAiMatchRequested.emit()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">psychology</span>
+                <span>{{ aiMatchBusy() ? 'Evaluating...' : 'Re-evaluate AI Match' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="score-triple-row" data-inspector-ai-match-scores>
+            @if (mb.matchPercentage !== null || mb.finalScore !== null) {
+              <span class="score-pill">
+                Overall {{ mb.matchPercentage ?? mb.finalScore }}%
+              </span>
+            }
+            @if (mb.aiScore !== null && mb.aiScore !== undefined) {
+              <span class="score-pill is-ai" data-inspector-ai-score>
+                AI Semantic {{ mb.aiScore }}%
+              </span>
+            }
+            @if (mb.deterministicScore !== null && mb.deterministicScore !== undefined) {
+              <span class="score-pill is-det">
+                Deterministic {{ mb.deterministicScore }}%
+              </span>
+            }
+          </div>
+
+          <p class="intel-subnote">
+            Semantic evaluation compares verified profile, master resume, skills, experience, projects &amp;
+            responsibilities separately from rule-based weights.
+          </p>
+
+          @if (mb.aiRationale) {
+            <p class="intel-summary" data-inspector-ai-rationale>{{ mb.aiRationale }}</p>
+          }
+
+          @if (mb.aiStrongMatches && mb.aiStrongMatches.length > 0) {
+            <div class="semantic-group" data-inspector-ai-strong-matches>
+              <span class="gap-label">Strong matching areas</span>
+              <ul class="signal-list">
+                @for (item of mb.aiStrongMatches; track $index) {
+                  <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (mb.aiMissingSkills && mb.aiMissingSkills.length > 0) {
+            <div class="semantic-group" data-inspector-ai-missing-skills>
+              <span class="gap-label">AI-identified missing skills</span>
+              <div class="inspector-skills">
+                @for (skill of mb.aiMissingSkills; track $index) {
+                  <span class="skill-chip is-gap">{{ skill }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (mb.aiExperienceGaps && mb.aiExperienceGaps.length > 0) {
+            <div class="semantic-group" data-inspector-ai-experience-gaps>
+              <span class="gap-label">Experience gaps</span>
+              <ul class="signal-list">
+                @for (gap of mb.aiExperienceGaps; track $index) {
+                  <li>{{ gap }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (mb.aiPotentialConcerns && mb.aiPotentialConcerns.length > 0) {
+            <div class="semantic-group" data-inspector-ai-concerns>
+              <span class="gap-label">Potential concerns</span>
+              <ul class="signal-list concern-list">
+                @for (concern of mb.aiPotentialConcerns; track $index) {
+                  <li>{{ concern }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (mb.aiImprovementSuggestions && mb.aiImprovementSuggestions.length > 0) {
+            <div class="semantic-group" data-inspector-ai-suggestions>
+              <span class="gap-label">Improvement suggestions</span>
+              <ul class="signal-list suggestion-list">
+                @for (tip of mb.aiImprovementSuggestions; track $index) {
+                  <li>{{ tip }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </section>
+      } @else if (d && !loading()) {
+        <section class="intel-box subtle-hint" data-inspector-ai-match-empty>
+          <div class="intel-head">
+            <h4>AI Semantic Match Comparison</h4>
+            <button
+              type="button"
+              class="mini-action-btn is-primary"
+              data-inspector-action="evaluate-ai-match"
+              [disabled]="aiMatchBusy()"
+              (click)="evaluateAiMatchRequested.emit()"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">psychology</span>
+              <span>{{ aiMatchBusy() ? 'Evaluating...' : 'Run AI Semantic Match' }}</span>
+            </button>
+          </div>
+          <p class="intel-summary">
+            Compare your profile, master resume, skills, experience, projects &amp; role responsibilities
+            using AI while keeping deterministic rule scoring strictly separate.
+          </p>
+        </section>
+      }
+
+      @if (d?.aiAnalysis; as ai) {
+        <section class="intel-box" data-inspector-ai>
+          <div class="intel-head">
+            <h4>AI Role Analysis</h4>
+            <div class="intel-head-actions">
+              @if (ai.analysisVersion) {
+                <span class="version-pill" data-inspector-ai-version>v{{ ai.analysisVersion }}</span>
+              }
+              @if (ai.aiModelUsed) {
+                <span class="model-tag">
+                  {{ ai.aiProvider ? ai.aiProvider + ' · ' : '' }}{{ ai.aiModelUsed }}
+                </span>
+              }
+              <button
+                type="button"
+                class="mini-action-btn"
+                data-inspector-action="toggle-ai-history"
+                [attr.aria-expanded]="aiHistoryOpen()"
+                (click)="toggleAiHistoryRequested.emit()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">history</span>
+                <span>{{ aiHistoryOpen() ? 'Hide History' : 'History' }}</span>
+              </button>
+              <button
+                type="button"
+                class="mini-action-btn"
+                data-inspector-action="reanalyze-jd"
+                [disabled]="aiAnalysisBusy()"
+                (click)="analyzeJdRequested.emit()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                <span>{{ aiAnalysisBusy() ? 'Analyzing...' : 'Re-analyze' }}</span>
+              </button>
+            </div>
+          </div>
+
+          @if (ai.summary) {
+            <p class="intel-summary">{{ ai.summary }}</p>
+          }
+
+          @if (
+            ai.extractedTitle ||
+            ai.extractedCompany ||
+            formatAiLocation(ai) ||
+            formatAiExperience(ai) ||
+            formatAiWorkAndContract(ai) ||
+            hasAiCompensation(ai)
+          ) {
+            <dl class="ai-facts-grid" data-inspector-ai-facts>
+              @if (ai.extractedTitle) {
+                <div>
+                  <dt>Extracted Title</dt>
+                  <dd>{{ ai.extractedTitle }}</dd>
+                </div>
+              }
+              @if (ai.extractedCompany) {
+                <div>
+                  <dt>Company</dt>
+                  <dd>{{ ai.extractedCompany }}</dd>
+                </div>
+              }
+              @if (formatAiLocation(ai)) {
+                <div>
+                  <dt>Location &amp; Country</dt>
+                  <dd>{{ formatAiLocation(ai) }}</dd>
+                </div>
+              }
+              @if (formatAiExperience(ai)) {
+                <div>
+                  <dt>Experience</dt>
+                  <dd>{{ formatAiExperience(ai) }}</dd>
+                </div>
+              }
+              @if (formatAiWorkAndContract(ai)) {
+                <div>
+                  <dt>Work &amp; Contract</dt>
+                  <dd>{{ formatAiWorkAndContract(ai) }}</dd>
+                </div>
+              }
+              @if (hasAiCompensation(ai)) {
+                <div>
+                  <dt>Extracted Salary</dt>
+                  <dd>
+                    {{
+                      (ai.salaryMin ?? null)
+                        | salaryRange:(ai.salaryMax ?? null):(ai.salaryCurrency ?? null):(ai.salaryPeriod ?? null):false
+                    }}
+                  </dd>
+                </div>
+              }
+            </dl>
+          }
+
+          <div class="ai-offer-badges">
+            <span
+              class="offer-chip"
+              [class.is-positive]="ai.sponsorshipOffered === true"
+              [class.is-negative]="ai.sponsorshipOffered === false"
+              data-inspector-ai-sponsorship-flag
+            >
+              {{ formatTriStateBadge(ai.sponsorshipOffered, 'Visa Sponsorship Offered', 'No Visa Sponsorship', 'Sponsorship Unmentioned') }}
+            </span>
+            <span
+              class="offer-chip"
+              [class.is-positive]="ai.relocationAssistanceOffered === true"
+              [class.is-negative]="ai.relocationAssistanceOffered === false"
+              data-inspector-ai-relocation-flag
+            >
+              {{ formatTriStateBadge(ai.relocationAssistanceOffered, 'Relocation Assistance', 'No Relocation Support', 'Relocation Unmentioned') }}
+            </span>
+          </div>
+
+          @if (ai.requiredSkills.length > 0 || ai.niceToHaveSkills.length > 0) {
+            <div class="gap-groups">
+              @if (ai.requiredSkills.length > 0) {
+                <div>
+                  <span class="gap-label">Required skills</span>
+                  <div class="inspector-skills">
+                    @for (skill of ai.requiredSkills; track $index) {
+                      <span class="skill-chip is-match">{{ skill }}</span>
+                    }
+                  </div>
+                </div>
+              }
+              @if (ai.niceToHaveSkills.length > 0) {
+                <div>
+                  <span class="gap-label">Preferred skills</span>
+                  <div class="inspector-skills">
+                    @for (skill of ai.niceToHaveSkills; track $index) {
+                      <span class="skill-chip">{{ skill }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          @if (ai.languageRequirements.length > 0) {
+            <div>
+              <span class="gap-label">Language requirements</span>
+              <div class="inspector-skills">
+                @for (lang of ai.languageRequirements; track $index) {
+                  <span class="skill-chip">{{ lang }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (ai.responsibilities.length > 0) {
+            <div>
+              <span class="gap-label">Key responsibilities</span>
+              <ul class="signal-list">
+                @for (resp of ai.responsibilities; track $index) {
+                  <li>{{ resp }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (ai.benefits.length > 0) {
+            <div>
+              <span class="gap-label">Benefits &amp; perks</span>
+              <ul class="signal-list">
+                @for (benefit of ai.benefits; track $index) {
+                  <li>{{ benefit }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (ai.visaSponsorshipAnalysis) {
+            <p class="intel-subnote"><strong>Visa clues:</strong> {{ ai.visaSponsorshipAnalysis }}</p>
+          }
+          @if (ai.relocationAnalysis) {
+            <p class="intel-subnote"><strong>Relocation:</strong> {{ ai.relocationAnalysis }}</p>
+          }
+
+          @if (aiHistoryOpen()) {
+            <div class="ai-history-panel" data-inspector-ai-history>
+              <span class="gap-label">Analysis History</span>
+              @if (aiHistoryLoading()) {
+                <p class="intel-subnote">Loading analysis versions...</p>
+              } @else if (aiAnalysisHistory().length === 0) {
+                <p class="intel-subnote">No archived version snapshots recorded yet.</p>
+              } @else {
+                <div class="history-list">
+                  @for (ver of aiAnalysisHistory(); track ver.analysisVersion ?? $index) {
+                    <div class="history-item">
+                      <div class="history-meta">
+                        <strong>v{{ ver.analysisVersion ?? 1 }}</strong>
+                        <span>{{ ver.aiProvider ? ver.aiProvider + ' · ' : '' }}{{ ver.aiModelUsed }}</span>
+                        @if (ver.analyzedAt) {
+                          <span>{{ ver.analyzedAt | timeAgo }}</span>
+                        }
+                      </div>
+                      @if (ver.summary) {
+                        <p class="history-summary">{{ ver.summary }}</p>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+      } @else if (d && !loading()) {
+        <section class="intel-box subtle-hint" data-inspector-ai-empty>
+          <div class="intel-head">
+            <h4>AI Job Description Analyzer</h4>
+            <button
+              type="button"
+              class="mini-action-btn is-primary"
+              data-inspector-action="analyze-jd"
+              [disabled]="aiAnalysisBusy()"
+              (click)="analyzeJdRequested.emit()"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+              <span>{{ aiAnalysisBusy() ? 'Analyzing JD...' : 'Analyze JD with AI' }}</span>
+            </button>
+          </div>
+          <p class="intel-summary">
+            Extract structured required &amp; preferred skills, seniority, salary bounds, language demands,
+            and visa or relocation clues into versioned role history.
+          </p>
+        </section>
+      }
+
+      @if (d?.id; as loadedJobId) {
+        <app-job-assistant-panel
+          [jobId]="loadedJobId"
+          [jobTitle]="effectiveTitle()"
+          [companyName]="effectiveCompany()"
+        />
+      }
+
+      @if (displaySkills().length > 0) {
+        <div class="inspector-section">
+          <h4>Detected Skills</h4>
+          <div class="inspector-skills">
+            @for (skill of displaySkills(); track $index) {
+              <span class="skill-chip">{{ skill }}</span>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="inspector-section">
+        <div class="description-head">
+          <h4>{{ d ? 'Full Job Description' : 'Role Summary' }}</h4>
+          @if (safeOriginalUrl(); as postUrl) {
+            <a
+              class="external-mini-link"
+              [href]="postUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Original listing
+              <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+            </a>
+          }
+        </div>
+        <p class="full-description">
+          {{ d?.description || s?.descriptionSnippet || 'Select a job card to read the complete role description.' }}
+        </p>
+      </div>
+    </div>
+  </aside>
+}

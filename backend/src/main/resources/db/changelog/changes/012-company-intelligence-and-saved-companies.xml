@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="034-extend-companies-directory-fields" author="eurojob-architect">
+        <comment>Add employer dossier description, tech stack JSON, and industry index to companies table</comment>
+        <addColumn tableName="companies">
+            <column name="description" type="TEXT"/>
+            <column name="tech_stack" type="JSON"/>
+        </addColumn>
+
+        <createIndex tableName="companies" indexName="idx_companies_industry">
+            <column name="industry"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="companies" indexName="idx_companies_industry"/>
+            <dropColumn tableName="companies" columnName="tech_stack"/>
+            <dropColumn tableName="companies" columnName="description"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="035-create-user-saved-companies-table" author="eurojob-architect">
+        <comment>Create user_saved_companies table for priority target employer bookmarks</comment>
+        <createTable tableName="user_saved_companies">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_saved_companies" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="priority_tier" type="VARCHAR(20)" defaultValue="TARGET">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notes" type="TEXT"/>
+            <column name="saved_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_saved_companies"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_saved_companies_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="user_saved_companies"
+                                 baseColumnNames="company_id"
+                                 constraintName="fk_saved_companies_company"
+                                 referencedTableName="companies"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="user_saved_companies"
+                             columnNames="user_id, company_id"
+                             constraintName="uk_user_saved_companies_user_company"/>
+
+        <createIndex tableName="user_saved_companies" indexName="idx_user_saved_companies_user_saved">
+            <column name="user_id"/>
+            <column name="saved_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="user_saved_companies"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

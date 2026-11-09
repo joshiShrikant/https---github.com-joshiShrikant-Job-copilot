@@ -1,0 +1,141 @@
+<div class="kanban-scroll" cdkDropListGroup data-kanban-board>
+  <div class="kanban-grid">
+    @for (col of columns(); track col.meta.status) {
+      <section
+        class="kanban-column"
+        [attr.data-kanban-column]="col.meta.status"
+        [attr.aria-label]="col.meta.label + ' stage'"
+      >
+        <header class="column-head">
+          <div class="column-title-row">
+            <span class="material-symbols-outlined column-icon" aria-hidden="true">{{ col.meta.icon }}</span>
+            <h3>{{ col.meta.label }}</h3>
+          </div>
+          <span class="column-count" [attr.data-kanban-count]="col.meta.status">{{ col.items.length }}</span>
+        </header>
+
+        <div
+          class="column-dropzone"
+          cdkDropList
+          [id]="dropListId(col.meta.status)"
+          [cdkDropListData]="col.items"
+          (cdkDropListDropped)="onCardDrop(col.meta.status, $event)"
+        >
+          @if (col.items.length === 0) {
+            <div class="empty-slot">Drop application here</div>
+          } @else {
+            @for (app of col.items; track app.uuid) {
+              <article
+                class="app-card"
+                cdkDrag
+                [cdkDragData]="app"
+                [cdkDragDisabled]="transitioningUuid() === app.uuid"
+                [class.is-busy]="transitioningUuid() === app.uuid"
+                [class.is-overdue]="app.overdueFollowUp"
+                [attr.data-kanban-card]="app.uuid"
+              >
+                <div class="card-top">
+                  <button
+                    type="button"
+                    class="card-title-btn"
+                    [attr.data-kanban-open]="app.uuid"
+                    (click)="selectApplication.emit(app.uuid)"
+                  >
+                    <span class="job-title">{{ app.jobTitle }}</span>
+                    <span class="company-sub">{{ app.companyName }}</span>
+                  </button>
+                  @if (app.matchPercentage !== null) {
+                    <span class="match-pill">{{ app.matchPercentage }}%</span>
+                  }
+                </div>
+
+                <div class="card-meta-row">
+                  @if (app.jobLocation || app.jobCountry) {
+                    <span class="meta-chip">
+                      <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+                      {{ app.jobLocation || app.jobCountry }}
+                    </span>
+                  }
+                  @if (app.sponsorStatus) {
+                    <app-status-badge [sponsorStatus]="app.sponsorStatus" size="sm" />
+                  }
+                </div>
+
+                @if (app.tailoredResume || app.coverLetter || formatOffer(app)) {
+                  <div class="card-badges">
+                    @if (app.tailoredResume; as cv) {
+                      <span class="doc-pill" title="Linked Tailored CV">
+                        <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                        CV v{{ cv.versionNumber ?? 1 }}
+                      </span>
+                    }
+                    @if (app.coverLetter; as cl) {
+                      <span class="doc-pill" title="Linked Cover Letter">
+                        <span class="material-symbols-outlined" aria-hidden="true">article</span>
+                        CL v{{ cl.versionNumber ?? 1 }}
+                      </span>
+                    }
+                    @if (formatOffer(app); as offerText) {
+                      <span class="offer-pill" title="Offered Salary">
+                        <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+                        {{ offerText }}
+                      </span>
+                    }
+                  </div>
+                }
+
+                <div class="card-dates">
+                  @if (app.nextInterviewDate) {
+                    <span class="date-chip is-interview">
+                      <span class="material-symbols-outlined" aria-hidden="true">event</span>
+                      Int {{ app.nextInterviewDate | date: 'MMM d, HH:mm' }}
+                    </span>
+                  }
+                  @if (app.nextFollowUpDate) {
+                    <span
+                      class="date-chip"
+                      [class.is-overdue]="app.overdueFollowUp"
+                      [class.is-done]="app.followUpCompleted"
+                    >
+                      <span class="material-symbols-outlined" aria-hidden="true">
+                        {{ app.followUpCompleted ? 'task_alt' : 'notifications_active' }}
+                      </span>
+                      F/U {{ app.nextFollowUpDate | date: 'MMM d' }}
+                    </span>
+                  }
+                </div>
+
+                <div class="card-footer">
+                  <select
+                    class="stage-select"
+                    [attr.aria-label]="'Move ' + app.jobTitle + ' to stage'"
+                    [attr.data-kanban-move-select]="app.uuid"
+                    [value]="app.status"
+                    [disabled]="transitioningUuid() === app.uuid"
+                    (change)="onQuickStageChange(app.uuid, app.status, $event)"
+                  >
+                    @for (stage of stages; track stage.status) {
+                      <option [value]="stage.status" [selected]="app.status === stage.status">
+                        {{ stage.label }}
+                      </option>
+                    }
+                  </select>
+
+                  <button
+                    type="button"
+                    class="inspect-btn"
+                    (click)="selectApplication.emit(app.uuid)"
+                  >
+                    Timeline
+                    <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                  </button>
+                </div>
+              </article>
+            }
+          }
+        </div>
+      </section>
+    }
+  </div>
+</div>
+

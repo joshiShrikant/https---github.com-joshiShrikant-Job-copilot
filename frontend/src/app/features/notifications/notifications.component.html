@@ -1,0 +1,197 @@
+<div class="notifications-page">
+  <app-page-header
+    title="Notifications &amp; Autopilot Alerts"
+    subtitle="Review high-match European job alerts, verified sponsorship discoveries, and pipeline reminders."
+    icon="notifications"
+    [badge]="headerBadge()"
+  >
+    <div page-actions class="header-actions">
+      <a class="toolbar-btn" routerLink="/recommended-jobs">
+        <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+        Recommended Jobs
+      </a>
+      <button
+        type="button"
+        class="toolbar-btn"
+        data-notif-refresh
+        [disabled]="loading()"
+        (click)="loadNotifications()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        Refresh
+      </button>
+      <button
+        type="button"
+        class="primary-btn"
+        data-notif-mark-all
+        [disabled]="markingAll() || unreadCount() === 0"
+        (click)="markAllRead()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">done_all</span>
+        {{ markingAll() ? 'Marking...' : 'Mark All Read' }}
+      </button>
+    </div>
+  </app-page-header>
+
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert" data-notif-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="banner-btn" (click)="loadNotifications()">Retry</button>
+    </div>
+  }
+
+  @if (noticeMessage()) {
+    <div class="status-banner success" role="status" data-notif-notice>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ noticeMessage() }}</span>
+    </div>
+  }
+
+  <section class="filters-bar" aria-label="Notification filters">
+    <label class="toggle-chip">
+      <input
+        type="checkbox"
+        data-notif-unread-only
+        [ngModel]="unreadOnly()"
+        (ngModelChange)="onUnreadOnlyChange($event)"
+      />
+      <span>Unread only ({{ unreadCount() }})</span>
+    </label>
+
+    <label class="filter-field">
+      <span>Notification type</span>
+      <select
+        class="type-select"
+        data-notif-type-select
+        [ngModel]="selectedType()"
+        (ngModelChange)="onTypeChange($event)"
+      >
+        @for (opt of typeOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </label>
+
+    @if (pagedResponse(); as paged) {
+      <span class="count-summary">{{ paged.totalElements }} total notification(s)</span>
+    }
+  </section>
+
+  @if (loading() && !pagedResponse()) {
+    <section class="surface-card loading-box" data-notif-loading>
+      Loading your alerts and notifications...
+    </section>
+  } @else if (pagedResponse(); as paged) {
+    @if (paged.content.length === 0) {
+      <section class="surface-card empty-box" data-notif-empty>
+        <p>No notifications match your active filter.</p>
+        @if (unreadOnly() || selectedType()) {
+          <button
+            type="button"
+            class="toolbar-btn"
+            data-notif-reset-filters
+            (click)="unreadOnly.set(false); selectedType.set(''); loadNotifications(0)"
+          >
+            Show All Notifications
+          </button>
+        } @else {
+          <p>
+            Run an automated scan from
+            <a class="inline-link" routerLink="/recommended-jobs">Recommended Jobs</a>
+            to discover high-match roles.
+          </p>
+        }
+      </section>
+    } @else {
+      <section class="notifications-list" data-notif-list>
+        @for (item of paged.content; track item.id) {
+          <article
+            class="notif-card"
+            [class.is-unread]="!item.isRead"
+            [attr.data-notif-card]="item.id"
+          >
+            <div class="notif-icon-wrap" [class.is-unread]="!item.isRead" aria-hidden="true">
+              <span class="material-symbols-outlined">{{ iconForType(item.type) }}</span>
+            </div>
+
+            <div class="notif-body">
+              <div class="notif-meta">
+                <span class="type-pill">{{ formatType(item.type) }}</span>
+                @if (!item.isRead) {
+                  <span class="unread-pill" [attr.data-notif-unread-badge]="item.id">Unread</span>
+                }
+                <span class="time-stamp">{{ item.createdAt | timeAgo }}</span>
+              </div>
+
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.message }}</p>
+            </div>
+
+            <div class="notif-actions">
+              @if (canOpenTarget(item)) {
+                <button
+                  type="button"
+                  class="toolbar-btn"
+                  [attr.data-notif-open]="item.id"
+                  (click)="openTarget(item)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                  Open
+                </button>
+              }
+
+              @if (!item.isRead) {
+                <button
+                  type="button"
+                  class="toolbar-btn"
+                  [attr.data-notif-mark-read]="item.id"
+                  [disabled]="busyIds().has(item.id)"
+                  (click)="markRead(item)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">mark_email_read</span>
+                  Mark Read
+                </button>
+              }
+
+              <button
+                type="button"
+                class="danger-btn"
+                [attr.data-notif-delete]="item.id"
+                [disabled]="busyIds().has(item.id)"
+                (click)="deleteNotification(item)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                Delete
+              </button>
+            </div>
+          </article>
+        }
+      </section>
+
+      @if (paged.totalPages > 1) {
+        <div class="pagination-row" data-notif-pagination>
+          <button
+            type="button"
+            class="toolbar-btn"
+            data-notif-page="prev"
+            [disabled]="!paged.hasPrevious"
+            (click)="loadNotifications(paged.pageNumber - 1)"
+          >
+            Previous
+          </button>
+          <span>Page {{ paged.pageNumber + 1 }} of {{ paged.totalPages }}</span>
+          <button
+            type="button"
+            class="toolbar-btn"
+            data-notif-page="next"
+            [disabled]="!paged.hasNext"
+            (click)="loadNotifications(paged.pageNumber + 1)"
+          >
+            Next
+          </button>
+        </div>
+      }
+    }
+  }
+</div>

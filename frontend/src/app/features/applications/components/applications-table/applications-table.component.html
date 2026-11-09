@@ -1,0 +1,151 @@
+<div class="table-card" data-applications-table>
+  @if (sortedRows().length === 0) {
+    <div class="table-empty">
+      No tracked applications match your current filter. Track a role to compare offers, dates, and linked documents.
+    </div>
+  } @else {
+    <div class="table-scroll">
+      <table class="apps-table">
+        <thead>
+          <tr>
+            <th>
+              <button type="button" class="sort-btn" (click)="toggleSort('companyName')">
+                Role &amp; Employer
+                @if (sortField() === 'companyName') {
+                  <span>{{ sortAsc() ? '↑' : '↓' }}</span>
+                }
+              </button>
+            </th>
+            <th>Stage</th>
+            <th>
+              <button type="button" class="sort-btn" (click)="toggleSort('appliedDate')">
+                Applied Date
+                @if (sortField() === 'appliedDate') {
+                  <span>{{ sortAsc() ? '↑' : '↓' }}</span>
+                }
+              </button>
+            </th>
+            <th>
+              <button type="button" class="sort-btn" (click)="toggleSort('nextInterviewDate')">
+                Next Interview
+                @if (sortField() === 'nextInterviewDate') {
+                  <span>{{ sortAsc() ? '↑' : '↓' }}</span>
+                }
+              </button>
+            </th>
+            <th>
+              <button type="button" class="sort-btn" (click)="toggleSort('nextFollowUpDate')">
+                Follow-up Date
+                @if (sortField() === 'nextFollowUpDate') {
+                  <span>{{ sortAsc() ? '↑' : '↓' }}</span>
+                }
+              </button>
+            </th>
+            <th>Linked Docs</th>
+            <th>Offer</th>
+            <th>Notes &amp; Timeline</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (app of sortedRows(); track app.uuid) {
+            <tr [attr.data-table-row]="app.uuid" [class.is-overdue]="app.overdueFollowUp">
+              <td>
+                <div class="role-cell">
+                  <button
+                    type="button"
+                    class="row-title-link"
+                    (click)="selectApplication.emit(app.uuid)"
+                  >
+                    {{ app.jobTitle }}
+                  </button>
+                  <div class="role-sub">
+                    <span>{{ app.companyName }}</span>
+                    @if (app.jobLocation || app.jobCountry) {
+                      <span>· {{ app.jobLocation || app.jobCountry }}</span>
+                    }
+                    @if (app.matchPercentage !== null) {
+                      <span class="fit-chip">{{ app.matchPercentage }}% fit</span>
+                    }
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="stage-cell">
+                  <app-status-badge [applicationStatus]="app.status" size="sm" />
+                  <select
+                    class="inline-stage-select"
+                    [attr.aria-label]="'Stage for ' + app.jobTitle"
+                    [value]="app.status"
+                    [disabled]="transitioningUuid() === app.uuid"
+                    (change)="onStageChange(app, $event)"
+                  >
+                    @for (stage of stages; track stage.status) {
+                      <option [value]="stage.status" [selected]="app.status === stage.status">
+                        {{ stage.label }}
+                      </option>
+                    }
+                  </select>
+                </div>
+              </td>
+              <td>
+                {{ app.appliedDate ? (app.appliedDate | date: 'mediumDate') : '—' }}
+              </td>
+              <td>
+                @if (app.nextInterviewDate) {
+                  <span class="date-strong">{{ app.nextInterviewDate | date: 'MMM d, HH:mm' }}</span>
+                } @else {
+                  <span>—</span>
+                }
+              </td>
+              <td>
+                @if (app.nextFollowUpDate) {
+                  <span
+                    class="followup-pill"
+                    [class.is-overdue]="app.overdueFollowUp"
+                    [class.is-done]="app.followUpCompleted"
+                  >
+                    {{ app.nextFollowUpDate | date: 'mediumDate' }}
+                    @if (app.followUpCompleted) {
+                      (Done)
+                    } @else if (app.overdueFollowUp) {
+                      (Overdue)
+                    }
+                  </span>
+                } @else {
+                  <span>—</span>
+                }
+              </td>
+              <td>
+                <div class="docs-cell">
+                  @if (app.tailoredResume; as cv) {
+                    <span class="doc-tag">CV: {{ cv.title }} (v{{ cv.versionNumber ?? 1 }})</span>
+                  }
+                  @if (app.coverLetter; as cl) {
+                    <span class="doc-tag">CL: {{ cl.title }} (v{{ cl.versionNumber ?? 1 }})</span>
+                  }
+                  @if (!app.tailoredResume && !app.coverLetter) {
+                    <span class="muted">Unlinked</span>
+                  }
+                </div>
+              </td>
+              <td class="offer-col">{{ formatOffer(app) }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button
+                    type="button"
+                    class="inspect-row-btn"
+                    [attr.data-table-open]="app.uuid"
+                    (click)="selectApplication.emit(app.uuid)"
+                  >
+                    Inspect ({{ app.statusHistory.length }})
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+

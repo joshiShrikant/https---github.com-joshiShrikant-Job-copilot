@@ -1,0 +1,325 @@
+@if (application(); as app) {
+  <div class="drawer-backdrop" (click)="close.emit()"></div>
+  <aside
+    class="detail-drawer"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="app.jobTitle + ' application details'"
+    data-application-drawer
+  >
+    <header class="drawer-head">
+      <div class="drawer-title-wrap">
+        <div class="drawer-kicker-row">
+          <app-status-badge [applicationStatus]="app.status" size="md" />
+          @if (app.sponsorStatus) {
+            <app-status-badge [sponsorStatus]="app.sponsorStatus" size="sm" />
+          }
+          @if (app.matchPercentage !== null) {
+            <span class="fit-pill">{{ app.matchPercentage }}% Match</span>
+          }
+        </div>
+        <h2>{{ app.jobTitle }}</h2>
+        <p class="drawer-company">
+          {{ app.companyName }}
+          @if (app.jobLocation || app.jobCountry) {
+            · {{ app.jobLocation || app.jobCountry }}
+          }
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="close-btn"
+        data-drawer-close
+        aria-label="Close application drawer"
+        (click)="close.emit()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+      </button>
+    </header>
+
+    <div class="drawer-quick-links">
+      <button
+        type="button"
+        class="quick-action-btn"
+        data-drawer-open-recruiter
+        (click)="openRecruiterTab.emit(app.uuid)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">forum</span>
+        Recruiter Outreach ({{ app.recruiterInteractionsCount }})
+      </button>
+      <a
+        class="quick-action-btn"
+        [routerLink]="['/resume-builder']"
+        [queryParams]="{ jobId: app.jobId }"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+        Tailor CV
+      </a>
+      <a
+        class="quick-action-btn"
+        [routerLink]="['/cover-letter']"
+        [queryParams]="{ jobId: app.jobId }"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">article</span>
+        Cover Letter
+      </a>
+      <a
+        class="quick-action-btn"
+        data-drawer-interview-prep
+        [routerLink]="['/interview-prep']"
+        [queryParams]="{ jobId: app.jobId }"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">psychology</span>
+        Interview Prep
+      </a>
+      @if (safeApplyUrl(); as jobUrl) {
+        <a
+          class="quick-action-btn"
+          [href]="jobUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+          Listing
+        </a>
+      }
+    </div>
+
+    <div class="drawer-body">
+      <!-- Stage Transition Section -->
+      <section class="drawer-section" data-drawer-transition-section>
+        <h3>Pipeline Stage &amp; Timeline Entry</h3>
+        <div class="transition-row">
+          <select
+            class="field-control"
+            aria-label="Target application stage"
+            data-drawer-status-select
+            [ngModel]="selectedNextStatus()"
+            (ngModelChange)="selectedNextStatus.set($event)"
+          >
+            @for (stage of stages; track stage.status) {
+              <option [value]="stage.status">{{ stage.label }}</option>
+            }
+          </select>
+          <button
+            type="button"
+            class="btn-primary"
+            data-drawer-transition-btn
+            [disabled]="transitioning() || (selectedNextStatus() === app.status && !transitionNotes().trim())"
+            (click)="submitTransition()"
+          >
+            {{ transitioning() ? 'Updating...' : 'Update Stage' }}
+          </button>
+        </div>
+        <input
+          type="text"
+          class="field-control"
+          placeholder="Optional timeline note (e.g. Completed systems design round with platform team)"
+          data-drawer-transition-note
+          [ngModel]="transitionNotes()"
+          (ngModelChange)="transitionNotes.set($event)"
+        />
+      </section>
+
+      <!-- Dates, Documents, Salary & Notes -->
+      <section class="drawer-section" data-drawer-metadata-section>
+        <h3>Dates, Linked Documents &amp; Compensation</h3>
+
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Applied Date</span>
+            <input
+              type="date"
+              class="field-control"
+              data-drawer-applied-date
+              [ngModel]="appliedDateInput()"
+              (ngModelChange)="appliedDateInput.set($event)"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Next Interview (Date &amp; Time)</span>
+            <input
+              type="datetime-local"
+              class="field-control"
+              data-drawer-interview-date
+              [ngModel]="nextInterviewInput()"
+              (ngModelChange)="nextInterviewInput.set($event)"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Next Follow-up Date</span>
+            <input
+              type="date"
+              class="field-control"
+              data-drawer-followup-date
+              [ngModel]="nextFollowUpInput()"
+              (ngModelChange)="nextFollowUpInput.set($event)"
+            />
+          </label>
+
+          <label class="form-field checkbox-field">
+            <span>Follow-up Status</span>
+            <span class="checkbox-wrap">
+              <input
+                type="checkbox"
+                data-drawer-followup-completed
+                [ngModel]="followUpCompleted()"
+                (ngModelChange)="followUpCompleted.set($event)"
+              />
+              <span>Mark current follow-up completed</span>
+            </span>
+          </label>
+
+          <label class="form-field">
+            <span>Salary Offered</span>
+            <input
+              type="number"
+              min="0"
+              step="500"
+              class="field-control"
+              placeholder="e.g. 112000"
+              data-drawer-salary
+              [ngModel]="salaryOfferInput()"
+              (ngModelChange)="salaryOfferInput.set($event)"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>Currency (ISO)</span>
+            <input
+              type="text"
+              maxlength="3"
+              class="field-control"
+              placeholder="EUR"
+              data-drawer-currency
+              [ngModel]="offeredCurrencyInput()"
+              (ngModelChange)="offeredCurrencyInput.set($event)"
+            />
+          </label>
+        </div>
+
+        <div class="form-grid">
+          <label class="form-field">
+            <span>Linked Tailored CV Version</span>
+            <select
+              class="field-control"
+              data-drawer-resume-select
+              [ngModel]="tailoredResumeUuidInput()"
+              (ngModelChange)="tailoredResumeUuidInput.set($event)"
+            >
+              <option value="">No tailored CV linked</option>
+              @for (cv of sortedResumes(); track cv.uuid) {
+                <option [value]="cv.uuid">
+                  {{ cv.title }} (v{{ cv.versionNumber }})@if (cv.jobId === app.jobId) { · For this job}
+                </option>
+              }
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span>Linked Cover Letter Version</span>
+            <select
+              class="field-control"
+              data-drawer-cover-letter-select
+              [ngModel]="coverLetterUuidInput()"
+              (ngModelChange)="coverLetterUuidInput.set($event)"
+            >
+              <option value="">No cover letter linked</option>
+              @for (cl of sortedCoverLetters(); track cl.uuid) {
+                <option [value]="cl.uuid">
+                  {{ cl.title }} (v{{ cl.versionNumber }})@if (cl.jobId === app.jobId) { · For this job}
+                </option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <label class="form-field">
+          <span>Application &amp; Interview Notes</span>
+          <textarea
+            rows="4"
+            class="field-control"
+            placeholder="Track interview topics, relocation support discussed, or recruiter contacts..."
+            data-drawer-notes
+            [ngModel]="notesInput()"
+            (ngModelChange)="notesInput.set($event)"
+          ></textarea>
+        </label>
+
+        <div class="save-bar">
+          @if (formattedOfferPreview(); as preview) {
+            <span class="offer-preview">Recorded Offer: {{ preview }}</span>
+          }
+          <button
+            type="button"
+            class="btn-primary"
+            data-drawer-save-btn
+            [disabled]="saving()"
+            (click)="submitMetadataUpdate()"
+          >
+            {{ saving() ? 'Saving Changes...' : 'Save Application Details' }}
+          </button>
+        </div>
+      </section>
+
+      <!-- Chronological Application Timeline -->
+      <section class="drawer-section" data-drawer-timeline>
+        <h3>Application Timeline ({{ app.statusHistory.length }})</h3>
+        @if (app.statusHistory.length === 0) {
+          <p class="empty-timeline">No status transitions recorded yet.</p>
+        } @else {
+          <ol class="timeline-list">
+            @for (entry of app.statusHistory; track entry.id) {
+              <li class="timeline-item" [attr.data-timeline-item]="entry.id">
+                <span class="timeline-dot" aria-hidden="true"></span>
+                <div class="timeline-content">
+                  <div class="timeline-head">
+                    <strong>
+                      @if (entry.previousStatus) {
+                        {{ stageLabel(entry.previousStatus) }} → {{ stageLabel(entry.newStatus) }}
+                      } @else {
+                        {{ stageLabel(entry.newStatus) }}
+                      }
+                    </strong>
+                    <time>{{ entry.transitionedAt | date: 'medium' }}</time>
+                  </div>
+                  @if (entry.transitionNotes) {
+                    <p class="timeline-note">{{ entry.transitionNotes }}</p>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </section>
+
+      <footer class="drawer-danger-zone">
+        <button
+          type="button"
+          class="btn-danger"
+          data-drawer-delete-btn
+          [disabled]="deleting()"
+          (click)="deleteConfirmOpen.set(true)"
+        >
+          {{ deleting() ? 'Deleting...' : 'Delete Application' }}
+        </button>
+      </footer>
+    </div>
+  </aside>
+
+  <app-confirm-dialog
+    [open]="deleteConfirmOpen()"
+    title="Delete tracked application?"
+    [message]="'Remove ' + app.jobTitle + ' at ' + app.companyName + ' and its status history from your tracker? Linked recruiter messages will remain intact.'"
+    confirmLabel="Delete Application"
+    tone="danger"
+    icon="delete_forever"
+    [busy]="deleting()"
+    (confirmed)="confirmDelete()"
+    (cancelled)="deleteConfirmOpen.set(false)"
+  />
+}
+

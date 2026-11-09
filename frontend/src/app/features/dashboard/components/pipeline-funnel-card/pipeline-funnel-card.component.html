@@ -1,0 +1,48 @@
+<section class="dash-card">
+  <div class="dash-card-head">
+    <div>
+      <h2>Application Pipeline Overview</h2>
+      <p>Distribution across your active European hiring stages.</p>
+    </div>
+    <a routerLink="/applications" class="card-link-btn">
+      <span>Open Pipeline</span>
+      <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+    </a>
+  </div>
+
+  @if (totalApplicationsCount() === 0) {
+    <div class="empty-state">
+      <strong>No tracked applications yet</strong>
+      <p>
+        Explore discovered European tech jobs, verify visa sponsorship confidence, and move roles
+        into your Kanban tracker.
+      </p>
+      <a routerLink="/jobs" class="card-link-btn">
+        <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+        Discover Jobs
+      </a>
+    </div>
+  } @else {
+    <div class="funnel-list">
+      @for (stage of activeStages(); track stage.status) {
+        <div class="funnel-row">
+          <span class="stage-label">{{ stage.label }}</span>
+          <div class="stage-bar-track">
+            <div class="stage-bar-fill" [style.width.%]="barWidthPercent(stage.count)"></div>
+          </div>
+          <strong class="stage-count">{{ stage.count }}</strong>
+        </div>
+      }
+    </div>
+
+    @if (closedStages().length > 0) {
+      <div class="closed-row">
+        <span>Closed stages:</span>
+        @for (stage of closedStages(); track stage.status) {
+          <span class="status-pill">{{ stage.label }}: {{ stage.count }}</span>
+        }
+      </div>
+    }
+  }
+</section>
+

@@ -1,0 +1,315 @@
+<form class="settings-stack" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="status-banner success" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Target Roles &amp; European Locations</h2>
+        <p>Define which titles, countries, and cities trigger high-match recommendations.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group field-full">
+        <label class="field-label" for="pref-titles-input">Preferred job titles</label>
+        <div class="chip-entry-row">
+          <input
+            id="pref-titles-input"
+            type="text"
+            class="field-input"
+            [value]="titleDraft()"
+            (input)="onDraftInput('title', $event)"
+            (keydown)="onDraftKeydown('title', $event)"
+            placeholder="e.g. Senior Java Engineer, Full-Stack Engineer (press Enter or comma)"
+          />
+          <button type="button" class="btn-secondary" (click)="commitDraft('title')">Add</button>
+        </div>
+
+        @if (preferredJobTitles().length > 0) {
+          <div class="chip-list">
+            @for (title of preferredJobTitles(); track title) {
+              <span class="chip-pill">
+                {{ title }}
+                <button
+                  type="button"
+                  class="chip-remove"
+                  [attr.aria-label]="'Remove target title ' + title"
+                  (click)="removeChip('title', title)"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </span>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="pref-countries-input">Target European countries</label>
+        <div class="chip-entry-row">
+          <input
+            id="pref-countries-input"
+            type="text"
+            class="field-input"
+            [value]="countryDraft()"
+            (input)="onDraftInput('country', $event)"
+            (keydown)="onDraftKeydown('country', $event)"
+            placeholder="e.g. Germany, Netherlands"
+          />
+          <button type="button" class="btn-secondary" (click)="commitDraft('country')">Add</button>
+        </div>
+
+        <div class="quick-presets">
+          @for (country of quickCountries; track country) {
+            <button
+              type="button"
+              class="preset-pill"
+              [class.is-selected]="hasCountry(country)"
+              (click)="toggleQuickCountry(country)"
+            >
+              {{ country }}
+            </button>
+          }
+        </div>
+
+        @if (preferredCountries().length > 0) {
+          <div class="chip-list">
+            @for (country of preferredCountries(); track country) {
+              <span class="chip-pill">
+                {{ country }}
+                <button
+                  type="button"
+                  class="chip-remove"
+                  [attr.aria-label]="'Remove target country ' + country"
+                  (click)="removeChip('country', country)"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </span>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="pref-cities-input">Target European cities</label>
+        <div class="chip-entry-row">
+          <input
+            id="pref-cities-input"
+            type="text"
+            class="field-input"
+            [value]="cityDraft()"
+            (input)="onDraftInput('city', $event)"
+            (keydown)="onDraftKeydown('city', $event)"
+            placeholder="e.g. Berlin, Amsterdam, Dublin"
+          />
+          <button type="button" class="btn-secondary" (click)="commitDraft('city')">Add</button>
+        </div>
+
+        @if (preferredCities().length > 0) {
+          <div class="chip-list">
+            @for (city of preferredCities(); track city) {
+              <span class="chip-pill">
+                {{ city }}
+                <button
+                  type="button"
+                  class="chip-remove"
+                  [attr.aria-label]="'Remove target city ' + city"
+                  (click)="removeChip('city', city)"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Compensation, Sponsorship &amp; Work Arrangement</h2>
+        <p>Filter job discovery feeds by minimum salary, visa sponsorship, and remote flexibility.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label class="field-label" for="pref-min-salary">Minimum expected annual salary</label>
+        <input
+          id="pref-min-salary"
+          type="number"
+          min="0"
+          step="1000"
+          class="field-input"
+          [class.is-invalid]="
+            form.controls.minSalary.invalid && form.controls.minSalary.touched
+          "
+          formControlName="minSalary"
+          placeholder="85000"
+        />
+        @if (form.controls.minSalary.invalid && form.controls.minSalary.touched) {
+          <span class="field-error">Minimum salary must be 0 or greater.</span>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="pref-salary-currency">Currency</label>
+        <select id="pref-salary-currency" class="field-select" formControlName="salaryCurrency">
+          @for (code of currencies; track code) {
+            <option [value]="code">{{ code }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field-group field-full">
+        <label class="field-label" for="pref-work-arrangement">Work arrangement</label>
+        <select id="pref-work-arrangement" class="field-select" formControlName="workArrangement">
+          @for (opt of workArrangementOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }} — {{ opt.description }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="toggle-list">
+      <label class="toggle-row">
+        <div class="toggle-copy">
+          <strong>Require Visa Sponsorship Support</strong>
+          <span>Prioritize verified sponsors (e.g. IND Netherlands, EU Blue Card eligible roles).</span>
+        </div>
+        <input id="pref-requires-sponsorship" type="checkbox" formControlName="requiresSponsorship" />
+      </label>
+
+      <label class="toggle-row">
+        <div class="toggle-copy">
+          <strong>Require Relocation Assistance</strong>
+          <span>Highlight roles offering relocation packages or international onboarding.</span>
+        </div>
+        <input id="pref-requires-relocation" type="checkbox" formControlName="requiresRelocation" />
+      </label>
+
+      <label class="toggle-row">
+        <div class="toggle-copy">
+          <strong>English-Speaking Workplaces Only</strong>
+          <span>Filter out roles mandating native German, Dutch, or French fluency upfront.</span>
+        </div>
+        <input id="pref-english-only" type="checkbox" formControlName="englishSpeakingOnly" />
+      </label>
+    </div>
+  </section>
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Match Threshold &amp; Copilot Autopilot</h2>
+        <p>Control the minimum match percentage required before surfacing automated alerts.</p>
+      </div>
+      @if (form.controls.autopilotEnabled.value) {
+        <span class="badge-pill active">Autopilot Active</span>
+      } @else {
+        <span class="badge-pill">Manual Discovery</span>
+      }
+    </div>
+
+    <div class="score-control">
+      <div class="score-header">
+        <label class="field-label" for="pref-match-score-slider">Minimum match score threshold</label>
+        <strong class="score-value">{{ form.controls.minMatchScore.value }}%</strong>
+      </div>
+
+      <div class="score-inputs">
+        <input
+          id="pref-match-score-slider"
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          class="score-slider"
+          [value]="form.controls.minMatchScore.value"
+          (input)="onMatchScoreSliderInput($event)"
+        />
+        <input
+          id="pref-match-score-number"
+          type="number"
+          min="0"
+          max="100"
+          class="field-input score-number"
+          [class.is-invalid]="
+            form.controls.minMatchScore.invalid && form.controls.minMatchScore.touched
+          "
+          formControlName="minMatchScore"
+        />
+      </div>
+      @if (form.controls.minMatchScore.invalid && form.controls.minMatchScore.touched) {
+        <span class="field-error">Match score threshold must be between 0 and 100.</span>
+      }
+      <span class="field-hint">
+        Roles scoring {{ form.controls.minMatchScore.value }}% or higher will be prioritized on your
+        Recommended Jobs feed.
+      </span>
+    </div>
+
+    <label class="toggle-row">
+      <div class="toggle-copy">
+        <strong>Enable Copilot Autopilot Discovery</strong>
+        <span>
+          Automatically evaluate newly ingested European tech jobs against your profile and trigger
+          high-match notifications.
+        </span>
+      </div>
+      <input id="pref-autopilot-enabled" type="checkbox" formControlName="autopilotEnabled" />
+    </label>
+
+    @if (preferences()?.autopilotPaused) {
+      <div class="status-banner info" role="status" data-pref-autopilot-paused>
+        <span class="material-symbols-outlined" aria-hidden="true">pause_circle</span>
+        <span>
+          Scheduled autopilot scans are currently paused. Resume or trigger a manual scan on the
+          <a routerLink="/recommended-jobs" class="inline-link">Recommended Jobs</a> workspace.
+        </span>
+      </div>
+    }
+
+    <label class="toggle-row">
+      <div class="toggle-copy">
+        <strong>Optional Email Notification Digests</strong>
+        <span>
+          Opt in to receive autopilot digest summaries by email when the server SMTP mail relay is
+          configured. In-app notifications in the Alerts Center always remain active.
+        </span>
+      </div>
+      <input
+        id="pref-email-notifications"
+        type="checkbox"
+        formControlName="emailNotificationsEnabled"
+      />
+    </label>
+
+    <div class="actions-row">
+      <button type="submit" class="btn-primary" [disabled]="isSaving()">
+        <span class="material-symbols-outlined" aria-hidden="true">save</span>
+        @if (isSaving()) {
+          Saving Preferences...
+        } @else {
+          Save Search Preferences
+        }
+      </button>
+    </div>
+  </section>
+</form>
+

@@ -1,0 +1,31 @@
+<div class="resumes-page">
+  <app-page-header
+    title="My Resumes"
+    icon="description"
+    subtitle="Upload master PDF or DOCX CVs, parse structured details with AI, verify &amp; approve, and sync to your profile."
+  >
+    <a page-actions routerLink="/profile" class="btn-secondary">
+      <span class="material-symbols-outlined" aria-hidden="true">account_circle</span>
+      Edit Candidate Profile
+    </a>
+  </app-page-header>
+
+  @if (profileSyncedNotice(); as syncedMsg) {
+    <div class="status-banner info" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">verified</span>
+      <span class="banner-text">{{ syncedMsg }}</span>
+      <a routerLink="/profile" class="btn-secondary">View Synced Profile</a>
+    </div>
+  }
+
+  @if (loadErrorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ loadErrorMessage() }}</span>
+      <button type="button" class="btn-secondary" (click)="reload()">Retry</button>
+    </div>
+  }
+
+  <app-resumes-section (masterApproved)="onMasterApproved($event)" />
+</div>
+

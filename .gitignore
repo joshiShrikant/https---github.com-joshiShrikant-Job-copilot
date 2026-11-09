@@ -1,0 +1,33 @@
+# Environment files containing secrets
+.env
+.env.local
+.env.*.local
+
+# OS & IDE files
+.DS_Store
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+
+# Backend (Maven / Java)
+backend/target/
+backend/*.log
+
+# Frontend (Angular / Node)
+frontend/dist/
+frontend/node_modules/
+frontend/.angular/
+frontend/coverage/
+frontend/npm-debug.log*
+
+# Logs, backups & temporary files
+*.log
+*.sql
+*.sql.gz
+*.dump
+backups/
+logs/
+tmp/
+hs_err_pid*
+

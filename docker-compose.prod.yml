@@ -1,0 +1,33 @@
+# ==============================================================================
+# EuroJob Copilot - Production Compose Overlay
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+# Pre-requisites in .env:
+#   - SPRING_PROFILES_ACTIVE=prod
+#   - Strong random JWT_SECRET (>= 32 chars, NOT a placeholder)
+#   - Explicit HTTPS CORS_ALLOWED_ORIGINS & AUTH_COOKIE_SECURE=true
+#   - TLS termination handled upstream by reverse proxy (Caddy/Nginx/ALB)
+# ==============================================================================
+
+services:
+  mysql:
+    # Do not bind MySQL directly to public host interfaces in production.
+    ports: !reset []
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be explicitly configured for production}
+      AUTH_COOKIE_SECURE: "true"
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?CORS_ALLOWED_ORIGINS must be configured for production}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      SPRINGDOC_API_DOCS_ENABLED: "false"
+      SPRINGDOC_SWAGGER_UI_ENABLED: "false"
+    # Only expose backend internally to frontend proxy / private network in production;
+    # set BACKEND_BIND_IP=127.0.0.1 if terminating TLS on the same host.
+    ports: !override
+      - "${BACKEND_BIND_IP:-127.0.0.1}:${BACKEND_PORT:-8080}:8080"
+
+  frontend:
+    ports: !override
+      - "${FRONTEND_BIND_IP:-127.0.0.1}:${FRONTEND_PORT:-8081}:80"

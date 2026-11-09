@@ -1,0 +1,14 @@
+@use '../profile/styles/profile-shared';
+
+.resumes-page {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.banner-text {
+  flex: 1;
+}
+

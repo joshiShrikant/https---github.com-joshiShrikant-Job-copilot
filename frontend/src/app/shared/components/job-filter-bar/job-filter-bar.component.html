@@ -1,0 +1,270 @@
+@let f = filters();
+<section class="filter-bar-card" aria-label="Job discovery filters">
+  <div class="top-search-row">
+    <div class="search-field-wrap">
+      <span class="material-symbols-outlined search-icon" aria-hidden="true">search</span>
+      <input
+        type="search"
+        class="search-input"
+        data-filter="query"
+        placeholder="Search role title, skill (Java, Spring, Angular), or company..."
+        aria-label="Search jobs by keyword"
+        [value]="queryDraft()"
+        [disabled]="disabled()"
+        (input)="onQueryInput($event)"
+        (keydown.enter)="onSearchSubmit()"
+      />
+      @if (queryDraft().length > 0) {
+        <button
+          type="button"
+          class="clear-query-btn"
+          aria-label="Clear search query"
+          data-filter-action="clear-query"
+          [disabled]="disabled()"
+          (click)="onClearQuery()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        </button>
+      }
+    </div>
+
+    <div class="arrangement-pills" role="group" aria-label="Work arrangement filter">
+      <button
+        type="button"
+        class="mode-pill"
+        [class.is-selected]="f.workArrangement === ''"
+        data-filter-arrangement=""
+        [disabled]="disabled()"
+        (click)="onSelectWorkArrangement('')"
+      >
+        All Modes
+      </button>
+      @for (option of arrangementOptions; track option.value) {
+        <button
+          type="button"
+          class="mode-pill"
+          [class.is-selected]="f.workArrangement === option.value"
+          [attr.data-filter-arrangement]="option.value"
+          [disabled]="disabled()"
+          (click)="onSelectWorkArrangement(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="facets-grid">
+    <label class="facet-field">
+      <span class="facet-label">Country</span>
+      <select
+        class="facet-select"
+        data-filter="country"
+        [value]="f.country"
+        [disabled]="disabled()"
+        (change)="onCountryChange($event)"
+      >
+        <option value="">All European Countries</option>
+        @for (country of countryOptions(); track country) {
+          <option [value]="country">{{ country }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="facet-field">
+      <span class="facet-label">Visa Sponsorship</span>
+      <select
+        class="facet-select"
+        data-filter="sponsorStatus"
+        [value]="f.sponsorStatus"
+        [disabled]="disabled()"
+        (change)="onSponsorChange($event)"
+      >
+        <option value="">All Sponsorship Statuses</option>
+        @for (option of sponsorOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="facet-field">
+      <span class="facet-label">Contract Type</span>
+      <select
+        class="facet-select"
+        data-filter="employmentType"
+        [value]="f.employmentType"
+        [disabled]="disabled()"
+        (change)="onEmploymentChange($event)"
+      >
+        <option value="">All Employment Types</option>
+        @for (option of employmentOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="facet-field">
+      <span class="facet-label">Seniority</span>
+      <select
+        class="facet-select"
+        data-filter="experienceLevel"
+        [value]="f.experienceLevel"
+        [disabled]="disabled()"
+        (change)="onExperienceChange($event)"
+      >
+        <option value="">All Seniority Levels</option>
+        @for (option of experienceOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="facet-field">
+      <span class="facet-label">Min Match Score</span>
+      <select
+        class="facet-select"
+        data-filter="minMatchScore"
+        [value]="f.minMatchScore ?? ''"
+        [disabled]="disabled()"
+        (change)="onMinMatchChange($event)"
+      >
+        @for (option of minMatchOptions; track option.label) {
+          <option [value]="option.value ?? ''">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="facet-field">
+      <span class="facet-label">Sort By</span>
+      <select
+        class="facet-select"
+        data-filter="sort"
+        [value]="f.sort"
+        [disabled]="disabled()"
+        (change)="onSortChange($event)"
+      >
+        @for (option of sortOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <div class="secondary-filters-row">
+    <div class="secondary-inputs">
+      <label class="inline-input-field">
+        <span class="facet-label">City</span>
+        <input
+          type="text"
+          class="facet-text-input"
+          data-filter="city"
+          placeholder="e.g. Amsterdam, Munich"
+          aria-label="Filter by city"
+          [value]="cityDraft()"
+          [disabled]="disabled()"
+          (input)="onCityInput($event)"
+          (keydown.enter)="onCitySubmit()"
+        />
+      </label>
+
+      <label class="inline-input-field">
+        <span class="facet-label">Min Salary (EUR)</span>
+        <input
+          type="number"
+          class="facet-text-input"
+          data-filter="minSalary"
+          min="0"
+          step="5000"
+          placeholder="e.g. 75000"
+          aria-label="Minimum annual salary in EUR"
+          [value]="minSalaryDraft()"
+          [disabled]="disabled()"
+          (input)="onMinSalaryInput($event)"
+          (keydown.enter)="onMinSalarySubmit()"
+        />
+      </label>
+    </div>
+
+    <div class="flag-toggles" role="group" aria-label="Saved, interested, and hidden views">
+      <button
+        type="button"
+        class="flag-toggle-btn"
+        [class.is-active]="f.savedOnly"
+        [attr.aria-pressed]="f.savedOnly"
+        data-filter-flag="savedOnly"
+        [disabled]="disabled()"
+        (click)="onToggleBooleanFlag('savedOnly')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ f.savedOnly ? 'bookmark_added' : 'bookmark_border' }}
+        </span>
+        <span>Saved only</span>
+      </button>
+
+      <button
+        type="button"
+        class="flag-toggle-btn"
+        [class.is-active]="f.interestedOnly"
+        [attr.aria-pressed]="f.interestedOnly"
+        data-filter-flag="interestedOnly"
+        [disabled]="disabled()"
+        (click)="onToggleBooleanFlag('interestedOnly')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
+        <span>Interested only</span>
+      </button>
+
+      <button
+        type="button"
+        class="flag-toggle-btn"
+        [class.is-active]="f.includeHidden"
+        [attr.aria-pressed]="f.includeHidden"
+        data-filter-flag="includeHidden"
+        [disabled]="disabled()"
+        (click)="onToggleBooleanFlag('includeHidden')"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+        <span>Include hidden</span>
+      </button>
+    </div>
+  </div>
+
+  @if (activeCount() > 0 || totalCount() !== null) {
+    <div class="active-summary-bar">
+      <div class="chips-group">
+        @if (totalCount() !== null) {
+          <span class="results-count" data-filter-results-count>
+            {{ totalCount() }} {{ totalCount() === 1 ? 'role' : 'roles' }}
+          </span>
+        }
+        @for (chip of activeChips(); track chip.key) {
+          <span class="active-chip" [attr.data-chip-key]="chip.key">
+            <span>{{ chip.label }}</span>
+            <button
+              type="button"
+              class="chip-remove-btn"
+              [attr.aria-label]="'Remove ' + chip.label"
+              [disabled]="disabled()"
+              (click)="onRemoveChip(chip.key)"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+            </button>
+          </span>
+        }
+      </div>
+
+      @if (activeCount() > 0) {
+        <button
+          type="button"
+          class="reset-filters-btn"
+          data-filter-action="reset-all"
+          [disabled]="disabled()"
+          (click)="onResetAll()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+          <span>Clear all ({{ activeCount() }})</span>
+        </button>
+      }
+    </div>
+  }
+</section>

@@ -1,0 +1,1040 @@
+<div class="resume-builder-page">
+  <app-page-header
+    title="AI Resume Builder"
+    icon="edit_document"
+    [badge]="headerBadge()"
+    subtitle="Tailor role-specific European CVs strictly grounded in your verified profile, work history, and approved Master CV."
+  >
+    <a page-actions routerLink="/jobs" class="btn-secondary">
+      <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+      Browse Jobs
+    </a>
+    <a page-actions routerLink="/resumes" class="btn-secondary">
+      <span class="material-symbols-outlined" aria-hidden="true">description</span>
+      My Master CVs
+    </a>
+    <a
+      page-actions
+      routerLink="/applications"
+      [queryParams]="selectedJobId() ? { jobId: selectedJobId() } : null"
+      class="btn-secondary"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">view_kanban</span>
+      Track Pipeline
+    </a>
+  </app-page-header>
+
+  @if (loadErrorMessage(); as loadErr) {
+    <div class="status-banner error" role="alert" data-builder-load-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ loadErr }}</span>
+      <button type="button" class="btn-secondary" (click)="reloadWorkspace()">Retry</button>
+    </div>
+  }
+
+  @if (actionSuccessMessage(); as okMsg) {
+    <div class="status-banner success" role="status" data-builder-success>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span class="banner-text">{{ okMsg }}</span>
+    </div>
+  }
+
+  <div class="builder-layout">
+    <!-- Left Rail: Generation Controls + Saved Version History -->
+    <aside class="builder-sidebar" aria-label="Resume tailoring controls and version history">
+      <section class="section-card" data-builder-generator>
+        <div class="card-head">
+          <div class="card-title-group">
+            <h2>Generate Tailored Draft</h2>
+            <p>AI rewrites bullets &amp; highlights genuine skills for the selected JD without inventing credentials.</p>
+          </div>
+        </div>
+
+        @if (masterResumes().length === 0) {
+          <div class="status-banner warning" role="status" data-builder-no-master>
+            <span class="material-symbols-outlined" aria-hidden="true">upload_file</span>
+            <div class="banner-copy">
+              <strong>Master CV Required</strong>
+              <p>Upload and approve a Master CV before generating tailored versions.</p>
+              <a routerLink="/resumes" class="inline-action-link">Upload Master CV in My Resumes</a>
+            </div>
+          </div>
+        }
+
+        <div class="field-group">
+          <label class="field-label" for="tb-job-select">Target Job</label>
+          <select
+            id="tb-job-select"
+            class="field-select"
+            data-builder-job-select
+            [value]="selectedJobId() ?? ''"
+            (change)="onJobSelectChange($event)"
+          >
+            @if (jobOptions().length === 0) {
+              <option value="">No indexed jobs found yet</option>
+            } @else {
+              @for (job of jobOptions(); track job.id) {
+                <option [value]="job.id" [selected]="selectedJobId() === job.id">
+                  {{ job.title }} — {{ job.companyName }}@if (job.country) { ({{ job.country }})}@if (job.matchPercentage !== null) { · {{ job.matchPercentage }}% fit}
+                </option>
+              }
+            }
+          </select>
+          @if (selectedJobOption(); as selJob) {
+            <span class="field-hint">
+              Selected: <strong>{{ selJob.companyName }}</strong>@if (selJob.country) { · {{ selJob.country }}}
+            </span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="tb-master-select">Source Master CV</label>
+          <select
+            id="tb-master-select"
+            class="field-select"
+            data-builder-master-select
+            [value]="selectedMasterUuid()"
+            [disabled]="masterResumes().length === 0"
+            (change)="onMasterSelectChange($event)"
+          >
+            @if (masterResumes().length === 0) {
+              <option value="">No Master CV uploaded</option>
+            } @else {
+              @for (mr of masterResumes(); track mr.uuid) {
+                <option [value]="mr.uuid" [selected]="selectedMasterUuid() === mr.uuid">
+                  {{ mr.title }} (v{{ mr.versionNumber }}) · {{ mr.isMasterApproved ? 'Approved Master' : (mr.parseStatus || 'Uploaded') }}
+                </option>
+              }
+            }
+          </select>
+          @if (approvedMasterResume(); as approved) {
+            <span class="field-hint">
+              Verified baseline synced from <strong>{{ approved.title }}</strong>.
+            </span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="tb-template-select">Layout Template</label>
+          <select
+            id="tb-template-select"
+            class="field-select"
+            data-builder-template-select
+            [value]="selectedTemplate()"
+            (change)="onTemplateSelectChange($event)"
+          >
+            @for (tpl of templateOptions; track tpl.value) {
+              <option [value]="tpl.value" [selected]="selectedTemplate() === tpl.value">{{ tpl.label }} · {{ tpl.subtitle }}</option>
+            }
+          </select>
+          <span class="field-hint">{{ selectedTemplateMeta().description }}</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="tb-focus-input">Tailoring Focus (Optional)</label>
+          <textarea
+            id="tb-focus-input"
+            class="field-textarea focus-textarea"
+            maxlength="500"
+            rows="3"
+            data-builder-focus-input
+            [value]="tailoringFocus()"
+            (input)="onFocusInput($event)"
+            placeholder="e.g. Emphasize Java 21 payment microservices, latency metrics, and EU relocation readiness."
+          ></textarea>
+          <span class="field-hint">{{ tailoringFocus().length }}/500 chars</span>
+        </div>
+
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            [checked]="forceRefresh()"
+            data-builder-force-refresh
+            (change)="onForceRefreshChange($event)"
+          />
+          <span>Generate fresh version instead of reusing cached draft</span>
+        </label>
+
+        @if (generateErrorMessage(); as genErr) {
+          <div class="status-banner error" role="alert" data-builder-generate-error>
+            <span class="material-symbols-outlined" aria-hidden="true">error</span>
+            <span class="banner-text">{{ genErr }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn-primary generate-submit-btn"
+          data-builder-action="generate"
+          [disabled]="!canGenerate()"
+          (click)="generateTailoredResume()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ isGenerating() ? 'hourglass_top' : 'auto_awesome' }}
+          </span>
+          <span>{{ isGenerating() ? 'Generating Grounded Draft...' : 'Generate Tailored Resume' }}</span>
+        </button>
+      </section>
+
+      <!-- Saved Tailored Versions -->
+      <section class="section-card" data-builder-versions>
+        <div class="versions-head">
+          <div class="card-title-group">
+            <h2>Saved Versions</h2>
+            <p>{{ tailoredResumes().length }} {{ tailoredResumes().length === 1 ? 'draft' : 'drafts' }} persisted</p>
+          </div>
+          <div class="segmented-mini" role="group" aria-label="Filter tailored versions">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.is-active]="versionFilterMode() === 'all'"
+              data-builder-filter="all"
+              (click)="setVersionFilterMode('all')"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.is-active]="versionFilterMode() === 'job'"
+              [disabled]="selectedJobId() === null"
+              data-builder-filter="job"
+              (click)="setVersionFilterMode('job')"
+            >
+              This Job
+            </button>
+          </div>
+        </div>
+
+        @if (isLoadingList()) {
+          <div class="status-banner info" role="status">
+            <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+            <span>Loading tailored versions...</span>
+          </div>
+        } @else if (tailoredResumes().length === 0) {
+          <div class="empty-state compact-empty" data-builder-empty-versions>
+            <span class="material-symbols-outlined" aria-hidden="true">history_edu</span>
+            <h3>No tailored CVs yet</h3>
+            <p>Select a target job and click Generate Tailored Resume to create version 1.</p>
+          </div>
+        } @else {
+          <div class="version-list">
+            @for (ver of tailoredResumes(); track ver.uuid) {
+              <div
+                class="version-item"
+                [class.is-selected]="activeResume()?.uuid === ver.uuid"
+                [attr.data-builder-version-uuid]="ver.uuid"
+                role="button"
+                tabindex="0"
+                (click)="selectTailoredResume(ver.uuid)"
+                (keydown.enter)="selectTailoredResume(ver.uuid)"
+              >
+                <div class="version-top-row">
+                  <strong class="version-title">{{ ver.title }}</strong>
+                  <span class="badge-pill primary">v{{ ver.versionNumber }}</span>
+                </div>
+                <div class="version-sub-row">
+                  <span>{{ ver.jobTitle }} · {{ ver.companyName }}</span>
+                </div>
+                <div class="version-badges-row">
+                  <span class="badge-pill">{{ formatTemplateName(ver.templateName) }}</span>
+                  @if (ver.atsKeywordCoverage !== null) {
+                    <span class="badge-pill success">ATS {{ formatCoverage(ver.atsKeywordCoverage) }}%</span>
+                  }
+                  @if (ver.editedByUser) {
+                    <span class="badge-pill edited">Edited</span>
+                  }
+                  <button
+                    type="button"
+                    class="version-delete-btn"
+                    title="Delete tailored version"
+                    [disabled]="deletingUuid() === ver.uuid"
+                    [attr.data-builder-delete-uuid]="ver.uuid"
+                    (click)="requestDeleteVersion(ver, $event)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                  </button>
+                </div>
+                <div class="version-meta-foot">
+                  <span>{{ ver.updatedAt | timeAgo }}</span>
+                  @if (ver.aiModelUsed) {
+                    <span>{{ ver.aiProvider ? ver.aiProvider + ' · ' : '' }}{{ ver.aiModelUsed }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </aside>
+
+    <!-- Main Workspace: Scoreboard, Draft Editor & Live Preview -->
+    <main class="builder-main">
+      @if (isLoadingDetail()) {
+        <section class="section-card">
+          <div class="status-banner info" role="status">
+            <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+            <span>Loading full tailored resume structure...</span>
+          </div>
+        </section>
+      } @else if (activeResume(); as active) {
+        <!-- Top Draft Summary + Mode Switch + Grounding Scoreboard -->
+        <section class="section-card" data-builder-scoreboard>
+          <div class="draft-header-bar">
+            <div class="draft-title-block">
+              <div class="draft-badges">
+                <span class="badge-pill primary">v{{ active.versionNumber }}</span>
+                <span class="badge-pill">{{ formatTemplateName(draftTemplate()) }}</span>
+                @if (active.editedByUser) {
+                  <span class="badge-pill edited" data-builder-edited-badge>Manually Edited</span>
+                } @else {
+                  <span class="badge-pill" data-builder-ai-badge>AI Grounded Draft</span>
+                }
+                @if (active.aiModelUsed) {
+                  <span class="badge-pill">{{ active.aiProvider ? active.aiProvider + ' · ' : '' }}{{ active.aiModelUsed }}</span>
+                }
+                @if (hasUnsavedChanges()) {
+                  <span class="badge-pill warning-pill" data-builder-dirty-badge>Unsaved Changes</span>
+                }
+              </div>
+              <h2>{{ active.title }}</h2>
+              <p class="draft-subtitle">
+                Target: <strong>{{ active.jobTitle }}</strong> at <strong>{{ active.companyName }}</strong>@if (active.jobCountry) { · {{ active.jobCountry }}}@if (active.masterResumeTitle) { · Source CV: {{ active.masterResumeTitle }}}
+              </p>
+            </div>
+
+            <div class="workspace-controls">
+              <div class="segmented-tabs" role="tablist" aria-label="Resume studio view mode">
+                <button
+                  type="button"
+                  role="tab"
+                  class="tab-btn"
+                  [class.is-active]="viewMode() === 'edit'"
+                  [attr.aria-selected]="viewMode() === 'edit'"
+                  data-builder-tab="edit"
+                  (click)="setViewMode('edit')"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+                  <span>Edit Draft</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="tab-btn"
+                  [class.is-active]="viewMode() === 'preview'"
+                  [attr.aria-selected]="viewMode() === 'preview'"
+                  data-builder-tab="preview"
+                  (click)="setViewMode('preview')"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                  <span>Live CV Preview</span>
+                </button>
+              </div>
+
+              @if (hasUnsavedChanges()) {
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  data-builder-action="reset-edits"
+                  [disabled]="isSaving()"
+                  (click)="resetUnsavedEdits()"
+                >
+                  Discard
+                </button>
+              }
+
+              <a
+                class="btn-secondary"
+                routerLink="/cover-letter"
+                [queryParams]="{ jobId: active.jobId, tailoredResumeUuid: active.uuid }"
+                data-builder-action="draft-cover-letter"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">article</span>
+                <span>Draft Cover Letter</span>
+              </a>
+
+              <button
+                type="button"
+                class="btn-primary"
+                data-builder-action="save"
+                [disabled]="isSaving()"
+                (click)="saveDraftChanges()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">save</span>
+                <span>{{ isSaving() ? 'Saving...' : 'Save Changes' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Document Export Controls -->
+          <div class="export-bar" data-builder-export-bar>
+            <div class="export-bar-info">
+              <div class="export-bar-title">
+                <span class="material-symbols-outlined" aria-hidden="true">download</span>
+                <strong>Export Document</strong>
+                <span class="badge-pill">{{ formatTemplateName(draftTemplate()) }}</span>
+              </div>
+              <span class="field-hint">
+                @if (hasUnsavedChanges()) {
+                  Unsaved draft changes will auto-save before export.
+                } @else if (active.hasPdfExport || active.hasDocxExport) {
+                  Ready:@if (active.hasPdfExport) { PDF cached}@if (active.hasPdfExport && active.hasDocxExport) { · }@if (active.hasDocxExport) { DOCX cached}
+                } @else {
+                  Download ATS-formatted PDF or editable Word (.docx) using selected template.
+                }
+              </span>
+            </div>
+
+            <div class="export-bar-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                data-builder-action="export-pdf"
+                [disabled]="isExporting() || isSaving()"
+                (click)="exportDocument('pdf')"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">picture_as_pdf</span>
+                <span>{{ exportingFormat() === 'pdf' ? 'Exporting PDF...' : 'Download PDF' }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                data-builder-action="export-docx"
+                [disabled]="isExporting() || isSaving()"
+                (click)="exportDocument('docx')"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">article</span>
+                <span>{{ exportingFormat() === 'docx' ? 'Exporting DOCX...' : 'Download DOCX' }}</span>
+              </button>
+            </div>
+          </div>
+
+          @if (exportErrorMessage(); as exportErr) {
+            <div class="status-banner error" role="alert" data-builder-export-error>
+              <span class="material-symbols-outlined" aria-hidden="true">error</span>
+              <span class="banner-text">{{ exportErr }}</span>
+            </div>
+          }
+
+          @if (saveErrorMessage(); as saveErr) {
+            <div class="status-banner error" role="alert" data-builder-save-error>
+              <span class="material-symbols-outlined" aria-hidden="true">error</span>
+              <span class="banner-text">{{ saveErr }}</span>
+            </div>
+          }
+
+          <!-- ATS Coverage & Grounding Gauges -->
+          <div class="scoreboard-grid">
+            <div class="score-tile">
+              <app-match-score-gauge
+                [score]="active.matchScore"
+                label="Role Match"
+                [showLabel]="true"
+                size="md"
+              />
+            </div>
+
+            <div class="ats-coverage-tile" data-builder-ats-coverage>
+              <div class="ats-head">
+                <span class="ats-label">Deterministic ATS Keyword Coverage</span>
+                <strong class="ats-value">{{ formatCoverage(active.atsKeywordCoverage) }}%</strong>
+              </div>
+              <div class="ats-bar-track">
+                <div
+                  class="ats-bar-fill"
+                  [style.width.%]="active.atsKeywordCoverage ?? 0"
+                  [class.is-high]="(active.atsKeywordCoverage ?? 0) >= 75"
+                  [class.is-mid]="(active.atsKeywordCoverage ?? 0) >= 50 && (active.atsKeywordCoverage ?? 0) < 75"
+                ></div>
+              </div>
+              <p class="field-hint">
+                Computed directly against verified candidate evidence and target JD keywords. Recalculated automatically on Save.
+              </p>
+            </div>
+          </div>
+
+          <div class="keywords-columns">
+            <div class="keyword-box">
+              <span class="keyword-box-label">Matched Verified JD Keywords ({{ matchedKeywordsList().length }})</span>
+              @if (matchedKeywordsList().length > 0) {
+                <div class="keyword-chips" data-builder-matched-keywords>
+                  @for (kw of matchedKeywordsList(); track $index) {
+                    <span class="kw-chip is-matched">{{ kw }}</span>
+                  }
+                </div>
+              } @else {
+                <span class="field-hint">No JD technical keywords matched yet.</span>
+              }
+            </div>
+
+            <div class="keyword-box">
+              <span class="keyword-box-label">Explicit Skill Gaps — Never Fabricated ({{ missingKeywordsList().length }})</span>
+              @if (missingKeywordsList().length > 0) {
+                <div class="keyword-chips" data-builder-missing-keywords>
+                  @for (kw of missingKeywordsList(); track $index) {
+                    <span class="kw-chip is-missing">{{ kw }}</span>
+                  }
+                </div>
+              } @else {
+                <span class="field-hint success-hint">All extracted JD keywords are covered by verified skills.</span>
+              }
+            </div>
+          </div>
+
+          @if (groundingWarningsList().length > 0) {
+            <div class="status-banner warning" role="status" data-builder-grounding-warnings>
+              <span class="material-symbols-outlined" aria-hidden="true">shield</span>
+              <div class="banner-copy">
+                <strong>Anti-Hallucination &amp; Grounding Verification Log</strong>
+                <ul class="warning-list">
+                  @for (warn of groundingWarningsList(); track $index) {
+                    <li>{{ warn }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+
+          @if (active.resumeData?.tailoringRationale; as rationale) {
+            <div class="rationale-box">
+              <span class="keyword-box-label">AI Tailoring Rationale</span>
+              <p>{{ rationale }}</p>
+            </div>
+          }
+        </section>
+
+        @if (viewMode() === 'edit') {
+          <!-- Structured Draft Editor -->
+          <section class="section-card editor-card" data-builder-editor>
+            <div class="card-head">
+              <div class="card-title-group">
+                <h2>Customize Draft Content</h2>
+                <p>Refine summary prose, skills ordering, and achievement bullets while employers &amp; education remain verified.</p>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="draft-title-input">Draft Title</label>
+                <input
+                  id="draft-title-input"
+                  type="text"
+                  class="field-input"
+                  maxlength="200"
+                  data-builder-draft-title
+                  [value]="draftTitle()"
+                  (input)="onDraftTitleInput($event)"
+                />
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="draft-template-select">Preview Template Style</label>
+                <select
+                  id="draft-template-select"
+                  class="field-select"
+                  data-builder-draft-template
+                  [value]="draftTemplate()"
+                  (change)="onDraftTemplateChange($event)"
+                >
+                  @for (tpl of templateOptions; track tpl.value) {
+                    <option [value]="tpl.value" [selected]="draftTemplate() === tpl.value">{{ tpl.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            @if (previewHeader(); as hdr) {
+              <div class="locked-header-box" data-builder-locked-header>
+                <div class="locked-box-head">
+                  <strong>Verified Candidate Header</strong>
+                  <span class="badge-pill">Locked to Master Profile</span>
+                </div>
+                <div class="locked-meta-line">
+                  @if (hdr.fullName) { <span><strong>{{ hdr.fullName }}</strong></span> }
+                  @if (hdr.headline) { <span>{{ hdr.headline }}</span> }
+                  @if (hdr.location) { <span>{{ hdr.location }}</span> }
+                  @if (hdr.workAuthorizationSummary) { <span>{{ hdr.workAuthorizationSummary }}</span> }
+                </div>
+              </div>
+            }
+
+            <div class="field-group">
+              <label class="field-label" for="draft-summary-input">Tailored Professional Summary</label>
+              <textarea
+                id="draft-summary-input"
+                class="field-textarea summary-textarea"
+                rows="4"
+                maxlength="2500"
+                data-builder-draft-summary
+                [value]="draftSummary()"
+                (input)="onDraftSummaryInput($event)"
+              ></textarea>
+              <span class="field-hint">{{ draftSummary().length }}/2500 chars</span>
+            </div>
+
+            <!-- Skills Editors -->
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="add-highlighted-skill">Highlighted Core Skills</label>
+                <div class="chip-entry-row">
+                  <input
+                    id="add-highlighted-skill"
+                    type="text"
+                    class="field-input"
+                    placeholder="Add skill (e.g. Spring Boot)"
+                    [value]="newHighlightedSkillInput()"
+                    (input)="onSkillInputChange('highlighted', $event)"
+                    (keydown.enter)="$event.preventDefault(); addChipItem('highlighted')"
+                  />
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="addChipItem('highlighted')"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div class="chip-list" data-builder-highlighted-skills>
+                  @for (skill of draftHighlightedSkills(); track $index) {
+                    <span class="chip-pill">
+                      <span>{{ skill }}</span>
+                      <button
+                        type="button"
+                        class="chip-remove"
+                        aria-label="Remove highlighted skill"
+                        (click)="removeChipItem('highlighted', $index)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="add-additional-skill">Additional Verified Skills</label>
+                <div class="chip-entry-row">
+                  <input
+                    id="add-additional-skill"
+                    type="text"
+                    class="field-input"
+                    placeholder="Add supporting skill"
+                    [value]="newAdditionalSkillInput()"
+                    (input)="onSkillInputChange('additional', $event)"
+                    (keydown.enter)="$event.preventDefault(); addChipItem('additional')"
+                  />
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="addChipItem('additional')"
+                  >
+                    Add
+                  </button>
+                </div>
+                <div class="chip-list" data-builder-additional-skills>
+                  @for (skill of draftAdditionalSkills(); track $index) {
+                    <span class="chip-pill">
+                      <span>{{ skill }}</span>
+                      <button
+                        type="button"
+                        class="chip-remove"
+                        aria-label="Remove additional skill"
+                        (click)="removeChipItem('additional', $index)"
+                      >
+                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Tailored Work Experience -->
+            <div class="subsection-block">
+              <div class="subsection-head">
+                <h3>Tailored Work Experience ({{ draftExperiences().length }})</h3>
+                <span class="field-hint">Employers, designations &amp; dates remain grounded in verified history.</span>
+              </div>
+
+              @if (draftExperiences().length === 0) {
+                <p class="field-hint">No work experience blocks recorded in this tailored draft.</p>
+              } @else {
+                <div class="experience-editor-list">
+                  @for (exp of draftExperiences(); track $index; let expIdx = $index) {
+                    <article class="exp-editor-card" [attr.data-builder-exp-index]="expIdx">
+                      <div class="exp-card-head">
+                        <div>
+                          <h4>{{ exp.designation }}</h4>
+                          <p class="exp-company-line">
+                            <strong>{{ exp.companyName }}</strong>@if (exp.location) { · {{ exp.location }}} · {{ formatDateRange(exp.startDate, exp.endDate, exp.current) }}
+                          </p>
+                        </div>
+                        <div class="exp-head-actions">
+                          @if (exp.relevanceScore !== null && exp.relevanceScore !== undefined) {
+                            <span class="badge-pill primary">{{ exp.relevanceScore }}% relevance</span>
+                          }
+                          @if (draftExperiences().length > 1) {
+                            <button
+                              type="button"
+                              class="btn-icon mini-btn"
+                              aria-label="Move experience up"
+                              [disabled]="expIdx === 0"
+                              [attr.data-builder-move-exp-up]="expIdx"
+                              (click)="moveExperience(expIdx, -1)"
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="btn-icon mini-btn"
+                              aria-label="Move experience down"
+                              [disabled]="expIdx === draftExperiences().length - 1"
+                              [attr.data-builder-move-exp-down]="expIdx"
+                              (click)="moveExperience(expIdx, 1)"
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">arrow_downward</span>
+                            </button>
+                          }
+                          @if (exp.originalBullets.length > 0) {
+                            <button
+                              type="button"
+                              class="btn-secondary mini-btn"
+                              [attr.data-builder-toggle-orig]="expIdx"
+                              (click)="toggleOriginalBullets(expIdx)"
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">compare_arrows</span>
+                              <span>
+                                {{ isOriginalBulletsExpanded(expIdx) ? 'Hide Original' : 'Compare Original (' + exp.originalBullets.length + ')' }}
+                              </span>
+                            </button>
+                          }
+                        </div>
+                      </div>
+
+                      @if (exp.matchedKeywords.length > 0) {
+                        <div class="keyword-chips">
+                          @for (mk of exp.matchedKeywords; track $index) {
+                            <span class="kw-chip is-matched">{{ mk }}</span>
+                          }
+                        </div>
+                      }
+
+                      @if (isOriginalBulletsExpanded(expIdx) && exp.originalBullets.length > 0) {
+                        <div class="original-compare-box" [attr.data-builder-orig-box]="expIdx">
+                          <div class="orig-box-head">
+                            <strong>Original Verified Bullets (from Master Profile / CV)</strong>
+                            <button
+                              type="button"
+                              class="btn-icon mini-btn"
+                              (click)="restoreOriginalExperienceBullets(expIdx)"
+                            >
+                              Restore Original Bullets
+                            </button>
+                          </div>
+                          <ul>
+                            @for (orig of exp.originalBullets; track $index) {
+                              <li>{{ orig }}</li>
+                            }
+                          </ul>
+                        </div>
+                      }
+
+                      <div class="bullets-editor-list">
+                        @for (bullet of exp.tailoredBullets; track $index; let bIdx = $index) {
+                          <div class="bullet-edit-row">
+                            <textarea
+                              class="field-textarea bullet-input"
+                              rows="2"
+                              maxlength="600"
+                              [attr.aria-label]="'Tailored bullet ' + (bIdx + 1) + ' for ' + exp.companyName"
+                              [value]="bullet"
+                              (input)="updateExperienceBullet(expIdx, bIdx, $event)"
+                            ></textarea>
+                            @if (exp.tailoredBullets.length > 1) {
+                              <button
+                                type="button"
+                                class="btn-icon mini-btn"
+                                aria-label="Move bullet up"
+                                [disabled]="bIdx === 0"
+                                (click)="moveExperienceBullet(expIdx, bIdx, -1)"
+                              >
+                                <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+                              </button>
+                              <button
+                                type="button"
+                                class="btn-icon mini-btn"
+                                aria-label="Move bullet down"
+                                [disabled]="bIdx === exp.tailoredBullets.length - 1"
+                                (click)="moveExperienceBullet(expIdx, bIdx, 1)"
+                              >
+                                <span class="material-symbols-outlined" aria-hidden="true">arrow_downward</span>
+                              </button>
+                            }
+                            <button
+                              type="button"
+                              class="btn-danger-ghost bullet-remove-btn"
+                              aria-label="Remove bullet"
+                              (click)="removeExperienceBullet(expIdx, bIdx)"
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                            </button>
+                          </div>
+                        }
+                        <div class="bullet-add-row">
+                          <button
+                            type="button"
+                            class="btn-secondary mini-btn"
+                            [disabled]="exp.tailoredBullets.length >= 15"
+                            (click)="addExperienceBullet(expIdx)"
+                          >
+                            <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                            <span>Add Achievement Bullet</span>
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Projects -->
+            @if (draftProjects().length > 0) {
+              <div class="subsection-block">
+                <h3>Tailored Verified Projects ({{ draftProjects().length }})</h3>
+                <div class="experience-editor-list">
+                  @for (proj of draftProjects(); track $index; let projIdx = $index) {
+                    <article class="exp-editor-card">
+                      <div class="exp-card-head">
+                        <div>
+                          <h4>{{ proj.name }}</h4>
+                          @if (proj.technologies.length > 0) {
+                            <div class="chip-list">
+                              @for (tech of proj.technologies; track $index) {
+                                <span class="badge-pill">{{ tech }}</span>
+                              }
+                            </div>
+                          }
+                        </div>
+                      </div>
+
+                      <div class="field-group">
+                        <label class="field-label" [for]="'proj-desc-' + projIdx">Project Description</label>
+                        <textarea
+                          [id]="'proj-desc-' + projIdx"
+                          class="field-textarea bullet-input"
+                          rows="2"
+                          maxlength="1500"
+                          [value]="proj.description ?? ''"
+                          (input)="updateProjectDescription(projIdx, $event)"
+                        ></textarea>
+                      </div>
+
+                      <div class="bullets-editor-list">
+                        @for (pb of proj.tailoredBullets; track $index; let pbIdx = $index) {
+                          <div class="bullet-edit-row">
+                            <textarea
+                              class="field-textarea bullet-input"
+                              rows="2"
+                              maxlength="500"
+                              [value]="pb"
+                              (input)="updateProjectBullet(projIdx, pbIdx, $event)"
+                            ></textarea>
+                            <button
+                              type="button"
+                              class="btn-danger-ghost bullet-remove-btn"
+                              aria-label="Remove project bullet"
+                              (click)="removeProjectBullet(projIdx, pbIdx)"
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                            </button>
+                          </div>
+                        }
+                        <div class="bullet-add-row">
+                          <button
+                            type="button"
+                            class="btn-secondary mini-btn"
+                            [disabled]="proj.tailoredBullets.length >= 10"
+                            (click)="addProjectBullet(projIdx)"
+                          >
+                            <span class="material-symbols-outlined" aria-hidden="true">add</span>
+                            <span>Add Project Highlight</span>
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Education Display Order -->
+            @if (draftEducations().length > 0) {
+              <div class="subsection-block">
+                <div class="subsection-head">
+                  <h3>Verified Education Order ({{ draftEducations().length }})</h3>
+                  <span class="field-hint">Degrees &amp; institutions remain locked to your Master Profile.</span>
+                </div>
+                <div class="experience-editor-list">
+                  @for (edu of draftEducations(); track $index; let eduIdx = $index) {
+                    <div class="exp-editor-card">
+                      <div class="exp-card-head">
+                        <div>
+                          <h4>{{ edu.degree }} in {{ edu.fieldOfStudy }}</h4>
+                          <p class="exp-company-line">
+                            <strong>{{ edu.institution }}</strong>@if (edu.country) { · {{ edu.country }}}@if (edu.gradeOrGpa) { · Grade: {{ edu.gradeOrGpa }}}
+                          </p>
+                        </div>
+                        @if (draftEducations().length > 1) {
+                          <div class="exp-head-actions">
+                            <button
+                              type="button"
+                              class="btn-icon mini-btn"
+                              aria-label="Move education up"
+                              [disabled]="eduIdx === 0"
+                              (click)="moveEducation(eduIdx, -1)"
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="btn-icon mini-btn"
+                              aria-label="Move education down"
+                              [disabled]="eduIdx === draftEducations().length - 1"
+                              (click)="moveEducation(eduIdx, 1)"
+                            >
+                              <span class="material-symbols-outlined" aria-hidden="true">arrow_downward</span>
+                            </button>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Languages & Certifications -->
+            <div class="form-grid subsection-block-grid">
+              <div class="field-group">
+                <label class="field-label" for="add-language-input">Languages</label>
+                <div class="chip-entry-row">
+                  <input
+                    id="add-language-input"
+                    type="text"
+                    class="field-input"
+                    placeholder="e.g. English (C2)"
+                    [value]="newLanguageInput()"
+                    (input)="onSkillInputChange('language', $event)"
+                    (keydown.enter)="$event.preventDefault(); addChipItem('language')"
+                  />
+                  <button type="button" class="btn-secondary" (click)="addChipItem('language')">Add</button>
+                </div>
+                <div class="chip-list">
+                  @for (lang of draftLanguages(); track $index) {
+                    <span class="chip-pill">
+                      <span>{{ lang }}</span>
+                      <button type="button" class="chip-remove" aria-label="Remove language" (click)="removeChipItem('language', $index)">
+                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="add-cert-input">Certifications</label>
+                <div class="chip-entry-row">
+                  <input
+                    id="add-cert-input"
+                    type="text"
+                    class="field-input"
+                    placeholder="e.g. AWS Solutions Architect"
+                    [value]="newCertificationInput()"
+                    (input)="onSkillInputChange('certification', $event)"
+                    (keydown.enter)="$event.preventDefault(); addChipItem('certification')"
+                  />
+                  <button type="button" class="btn-secondary" (click)="addChipItem('certification')">Add</button>
+                </div>
+                <div class="chip-list">
+                  @for (cert of draftCertifications(); track $index) {
+                    <span class="chip-pill">
+                      <span>{{ cert }}</span>
+                      <button type="button" class="chip-remove" aria-label="Remove certification" (click)="removeChipItem('certification', $index)">
+                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                      </button>
+                    </span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <div class="actions-row editor-footer-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                (click)="setViewMode('preview')"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                <span>Preview Formatted CV</span>
+              </button>
+              <button
+                type="button"
+                class="btn-primary"
+                [disabled]="isSaving()"
+                (click)="saveDraftChanges()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">save</span>
+                <span>{{ isSaving() ? 'Saving...' : 'Save Changes &amp; Recalculate ATS' }}</span>
+              </button>
+            </div>
+          </section>
+        } @else {
+          <!-- Formatted Live CV Sheet Preview -->
+          <section class="section-card" data-builder-preview>
+            <app-tailored-cv-preview
+              [template]="draftTemplate()"
+              [header]="previewHeader()"
+              [summary]="draftSummary()"
+              [highlightedSkills]="draftHighlightedSkills()"
+              [additionalSkills]="draftAdditionalSkills()"
+              [experiences]="draftExperiences()"
+              [projects]="draftProjects()"
+              [educations]="previewEducations()"
+              [languages]="draftLanguages()"
+              [certifications]="draftCertifications()"
+              (templateSelected)="onPreviewTemplateSelected($event)"
+            />
+          </section>
+        }
+      } @else {
+        <!-- No Draft Selected Empty State -->
+        <section class="section-card empty-state workspace-empty" data-builder-workspace-empty>
+          <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+          <h3>Ready to build a JD-tailored European CV</h3>
+          <p>
+            Choose a target job and your source Master CV on the left to generate an ATS-optimized draft strictly grounded in your verified career facts.
+          </p>
+          <ul class="grounding-pillars">
+            <li><strong>Zero Fabrication:</strong> Employers, dates, degrees &amp; skills stay verified against your Master CV.</li>
+            <li><strong>Explicit Gap Clarity:</strong> Missing JD keywords are surfaced separately instead of invented.</li>
+            <li><strong>Live ATS Recalculation:</strong> Refine summary, skills, or bullets and recalculate coverage anytime.</li>
+          </ul>
+        </section>
+      }
+    </main>
+  </div>
+
+  <app-confirm-dialog
+    [open]="pendingDeleteVersion() !== null"
+    title="Delete Tailored CV Version"
+    [message]="deleteDialogMessage()"
+    confirmLabel="Delete Draft"
+    cancelLabel="Cancel"
+    tone="danger"
+    icon="delete_forever"
+    [busy]="deletingUuid() !== null"
+    (confirmed)="confirmDeleteVersion()"
+    (cancelled)="cancelDeleteVersion()"
+  />
+</div>

@@ -1,0 +1,220 @@
+<section class="intel-box assistant-panel" data-assistant-panel>
+  <div class="intel-head">
+    <div class="assistant-title-block">
+      <h4>AI Application Assistant</h4>
+      <span class="subcopy">
+        Grounded in your verified profile, master resume, visa evidence &amp; match signals for
+        {{ companyName() || 'this role' }}.
+      </span>
+    </div>
+    <button
+      type="button"
+      class="mini-action-btn"
+      data-assistant-toggle-context
+      (click)="contextOpen.set(!contextOpen())"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+      <span>{{ contextOpen() ? 'Hide Context' : 'Add Notes / Tone' }}</span>
+    </button>
+  </div>
+
+  @if (contextOpen()) {
+    <label class="context-field">
+      <span>Optional context or instructions (target salary, notice period, tone)</span>
+      <input
+        type="text"
+        class="assistant-input"
+        maxlength="1000"
+        placeholder="e.g. 4 weeks notice period; target EUR 95k; concise confident tone"
+        data-assistant-context-input
+        [ngModel]="additionalContext()"
+        (ngModelChange)="additionalContext.set($event)"
+      />
+    </label>
+  }
+
+  <div class="quick-actions-grid" role="group" aria-label="AI Application Assistant quick actions">
+    @for (opt of quickActions; track opt.actionType) {
+      <button
+        type="button"
+        class="quick-chip-btn"
+        [attr.data-assistant-action]="opt.actionType"
+        [disabled]="!jobId() || sendingAction() !== null"
+        [title]="opt.description"
+        (click)="runQuickAction(opt.actionType)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">{{ opt.icon }}</span>
+        <span>
+          {{ sendingAction() === opt.actionType ? 'Working...' : opt.shortLabel }}
+        </span>
+      </button>
+    }
+  </div>
+
+  <form class="custom-question-row" (ngSubmit)="submitCustomQuestion()">
+    <input
+      type="text"
+      name="customQuestion"
+      class="assistant-input"
+      maxlength="1500"
+      placeholder="Ask about fit, relocation paperwork, recruiter pitch, or salary strategy..."
+      data-assistant-question-input
+      [disabled]="!jobId() || sendingAction() !== null"
+      [ngModel]="customQuestion()"
+      (ngModelChange)="customQuestion.set($event)"
+    />
+    <button
+      type="submit"
+      class="send-question-btn"
+      data-assistant-submit-question
+      [disabled]="!jobId() || !customQuestion().trim() || sendingAction() !== null"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">send</span>
+      <span>{{ sendingAction() === 'CUSTOM_QUESTION' ? 'Asking...' : 'Ask' }}</span>
+    </button>
+  </form>
+
+  @if (errorMessage()) {
+    <div class="assistant-banner error" role="alert" data-assistant-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (noticeMessage()) {
+    <div class="assistant-banner info" role="status" data-assistant-notice>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ noticeMessage() }}</span>
+    </div>
+  }
+
+  @if (loadingHistory()) {
+    <p class="assistant-muted" data-assistant-loading>Loading conversation history...</p>
+  } @else if (messages().length === 0) {
+    <p class="assistant-muted" data-assistant-empty>
+      Select a quick action above or ask a custom question to start a saved assistant thread for
+      <strong>{{ jobTitle() || 'this job' }}</strong>.
+    </p>
+  } @else {
+    <div class="turns-list" data-assistant-turns>
+      @for (msg of messages(); track msg.id) {
+        <article class="turn-card" [attr.data-assistant-turn]="msg.id">
+          <header class="turn-head">
+            <div class="turn-badges">
+              <span class="action-pill">{{ msg.actionLabel }}</span>
+              @if (msg.editedByUser) {
+                <span class="edited-pill" data-assistant-edited>Edited</span>
+              }
+              @if (msg.aiModelUsed) {
+                <span class="model-pill">
+                  {{ msg.aiProvider ? msg.aiProvider + ' · ' : '' }}{{ msg.aiModelUsed }}
+                </span>
+              }
+            </div>
+            <time class="turn-time">{{ msg.updatedAt | timeAgo }}</time>
+          </header>
+
+          @if (msg.userPrompt) {
+            <p class="turn-prompt"><strong>You asked:</strong> {{ msg.userPrompt }}</p>
+          }
+
+          <h5 class="turn-title">{{ msg.assistantTitle }}</h5>
+
+          @if (msg.highlights.length > 0) {
+            <div class="turn-highlights">
+              @for (item of msg.highlights; track $index) {
+                <span class="highlight-chip">{{ item }}</span>
+              }
+            </div>
+          }
+
+          @if (editingMessageId() === msg.id) {
+            <textarea
+              rows="6"
+              class="turn-editor"
+              [attr.data-assistant-editor]="msg.id"
+              [ngModel]="editDraftContent()"
+              (ngModelChange)="editDraftContent.set($event)"
+            ></textarea>
+            <div class="turn-actions">
+              <button
+                type="button"
+                class="mini-action-btn is-primary"
+                [attr.data-assistant-save-edit]="msg.id"
+                [disabled]="savingMessageId() === msg.id || !editDraftContent().trim()"
+                (click)="saveEdit(msg)"
+              >
+                {{ savingMessageId() === msg.id ? 'Saving...' : 'Save Edits' }}
+              </button>
+              <button type="button" class="mini-action-btn" (click)="cancelEdit()">Cancel</button>
+            </div>
+          } @else {
+            <div class="turn-body" [attr.data-assistant-content]="msg.id">
+              {{ msg.editableContent || msg.assistantContent }}
+            </div>
+
+            <footer class="turn-actions">
+              <button
+                type="button"
+                class="mini-action-btn"
+                [attr.data-assistant-edit]="msg.id"
+                (click)="startEdit(msg)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                <span>Edit Output</span>
+              </button>
+
+              <button
+                type="button"
+                class="mini-action-btn"
+                [attr.data-assistant-copy]="msg.id"
+                (click)="copyContent(msg)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">content_copy</span>
+                <span>{{ copiedMessageId() === msg.id ? 'Copied' : 'Copy' }}</span>
+              </button>
+
+              @if (msg.actionType === 'GENERATE_TAILORED_RESUME') {
+                <a
+                  class="mini-action-btn"
+                  [routerLink]="['/resume-builder']"
+                  [queryParams]="{ jobId: jobId() }"
+                >
+                  Open Resume Builder
+                </a>
+              } @else if (msg.actionType === 'GENERATE_COVER_LETTER') {
+                <a
+                  class="mini-action-btn"
+                  [routerLink]="['/cover-letter']"
+                  [queryParams]="{ jobId: jobId() }"
+                >
+                  Open Cover Letter Studio
+                </a>
+              } @else if (msg.actionType === 'INTERVIEW_PREP_TOPICS') {
+                <a
+                  class="mini-action-btn"
+                  [routerLink]="['/interview-prep']"
+                  [queryParams]="{ jobId: jobId() }"
+                >
+                  Practice in Interview Prep
+                </a>
+              }
+
+              <button
+                type="button"
+                class="mini-action-btn is-danger"
+                [attr.data-assistant-delete]="msg.id"
+                [disabled]="deletingMessageId() === msg.id"
+                (click)="deleteTurn(msg)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                <span>{{ deletingMessageId() === msg.id ? 'Deleting...' : 'Delete' }}</span>
+              </button>
+            </footer>
+          }
+        </article>
+      }
+    </div>
+  }
+</section>
+

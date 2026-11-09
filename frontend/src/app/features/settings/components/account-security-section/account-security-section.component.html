@@ -1,0 +1,178 @@
+<div class="settings-stack">
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Account Identity &amp; Verification</h2>
+        <p>Details bound to your signed-in EuroJob Copilot authentication session.</p>
+      </div>
+      @if (currentUser(); as user) {
+        <span class="badge-pill" [class.active]="user.emailVerified">
+          {{ user.emailVerified ? 'Email Verified' : 'Verification Pending' }}
+        </span>
+      }
+    </div>
+
+    @if (currentUser(); as user) {
+      <dl class="identity-grid">
+        <div class="identity-item">
+          <dt>Full Name</dt>
+          <dd>{{ fullName() }}</dd>
+        </div>
+
+        <div class="identity-item">
+          <dt>Email Address</dt>
+          <dd>{{ user.email }}</dd>
+        </div>
+
+        <div class="identity-item">
+          <dt>Account Role</dt>
+          <dd>{{ roleLabel() }}</dd>
+        </div>
+
+        <div class="identity-item">
+          <dt>Account Status</dt>
+          <dd>{{ user.accountStatus }}</dd>
+        </div>
+
+        <div class="identity-item identity-wide">
+          <dt>Account UUID</dt>
+          <dd class="mono-text">{{ user.uuid }}</dd>
+        </div>
+      </dl>
+    } @else {
+      <div class="status-banner info" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">info</span>
+        <span>No active user profile metadata loaded in this browser session.</span>
+      </div>
+    }
+
+    <div class="actions-row">
+      <a routerLink="/resumes" class="btn-secondary">
+        <span class="material-symbols-outlined" aria-hidden="true">description</span>
+        Manage Master Resumes
+      </a>
+      <a routerLink="/profile" class="btn-secondary">
+        <span class="material-symbols-outlined" aria-hidden="true">person</span>
+        Edit Candidate Profile
+      </a>
+    </div>
+  </section>
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Password &amp; Account Recovery</h2>
+        <p>
+          For security, password resets run through a signed verification link sent to your registered
+          email address.
+        </p>
+      </div>
+    </div>
+
+    <div class="actions-row split-row">
+      <span class="field-hint">
+        Signing out first safely unlocks the email password-reset flow on this browser.
+      </span>
+      <button
+        type="button"
+        class="btn-secondary"
+        data-action="sign-out-reset-password"
+        [disabled]="isLoggingOut()"
+        (click)="signOutToResetPassword()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">lock_reset</span>
+        Sign Out &amp; Reset Password
+      </button>
+    </div>
+  </section>
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Active Sessions &amp; Multi-Device Sign Out</h2>
+        <p>
+          End your current browser session or immediately revoke refresh tokens across all laptops and
+          mobile browsers.
+        </p>
+      </div>
+    </div>
+
+    <div class="session-actions">
+      <div class="session-option">
+        <div class="session-copy">
+          <strong>Current Browser Session</strong>
+          <span>Logs out this device while preserving active sessions on your other browsers.</span>
+        </div>
+        <button
+          type="button"
+          class="btn-secondary"
+          data-action="sign-out-current"
+          [disabled]="isLoggingOut()"
+          (click)="signOutCurrentDevice()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+          Sign Out This Device
+        </button>
+      </div>
+
+      <div class="session-option danger-option">
+        <div class="session-copy">
+          <strong>Global Session Revocation</strong>
+          <span>
+            Immediately invalidates all refresh tokens across every signed-in browser or device.
+          </span>
+        </div>
+        @if (!confirmRevokeAll()) {
+          <button
+            type="button"
+            class="btn-danger"
+            data-action="request-sign-out-all"
+            [disabled]="isLoggingOut()"
+            (click)="requestRevokeAll()"
+          >
+            <span class="material-symbols-outlined" aria-hidden="true">devices_off</span>
+            Sign Out All Devices
+          </button>
+        }
+      </div>
+
+      @if (confirmRevokeAll()) {
+        <div class="confirm-panel" role="alertdialog" aria-label="Confirm signing out of all devices">
+          <div class="confirm-copy">
+            <strong>Sign out across every device?</strong>
+            <p>
+              All active refresh sessions will be revoked immediately. Every browser will need to sign
+              in again.
+            </p>
+          </div>
+          <div class="actions-row">
+            <button
+              type="button"
+              class="btn-secondary"
+              data-action="cancel-sign-out-all"
+              [disabled]="isLoggingOut()"
+              (click)="cancelRevokeAll()"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn-danger"
+              data-action="confirm-sign-out-all"
+              [disabled]="isLoggingOut()"
+              (click)="signOutAllDevices()"
+            >
+              <span class="material-symbols-outlined" aria-hidden="true">shield_lock</span>
+              @if (isLoggingOut()) {
+                Revoking Sessions...
+              } @else {
+                Confirm Sign Out All Devices
+              }
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+</div>
+

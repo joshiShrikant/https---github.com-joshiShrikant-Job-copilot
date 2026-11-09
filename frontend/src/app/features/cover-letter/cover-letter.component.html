@@ -1,0 +1,662 @@
+<div class="cover-letter-page">
+  <app-page-header
+    title="AI Cover Letter Builder"
+    icon="article"
+    [badge]="headerBadge()"
+    subtitle="Draft European cover letters strictly grounded in your verified profile, tailored CV achievements, and visa/relocation context."
+  >
+    <a page-actions routerLink="/jobs" class="btn-secondary">
+      <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+      Browse Jobs
+    </a>
+    <a page-actions routerLink="/resume-builder" class="btn-secondary">
+      <span class="material-symbols-outlined" aria-hidden="true">edit_document</span>
+      AI Resume Builder
+    </a>
+    <a
+      page-actions
+      routerLink="/applications"
+      [queryParams]="selectedJobId() ? { jobId: selectedJobId() } : null"
+      class="btn-secondary"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">view_kanban</span>
+      Track Pipeline
+    </a>
+  </app-page-header>
+
+  @if (loadErrorMessage(); as loadErr) {
+    <div class="status-banner error" role="alert" data-cl-load-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ loadErr }}</span>
+      <button type="button" class="btn-secondary" (click)="reloadWorkspace()">Retry</button>
+    </div>
+  }
+
+  @if (actionSuccessMessage(); as okMsg) {
+    <div class="status-banner success" role="status" data-cl-success>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span class="banner-text">{{ okMsg }}</span>
+    </div>
+  }
+
+  <div class="studio-layout">
+    <!-- Left Rail: Generation Controls + Saved Versions -->
+    <aside class="studio-sidebar" aria-label="Cover letter generation controls and saved versions">
+      <section class="section-card" data-cl-generator>
+        <div class="card-head">
+          <div class="card-title-group">
+            <h2>Generate Cover Letter</h2>
+            <p>Tailors greeting, domain story, and EU relocation clarity to the target employer without inventing skills.</p>
+          </div>
+        </div>
+
+        @if (lacksCandidateEvidence()) {
+          <div class="status-banner warning" role="status" data-cl-no-evidence>
+            <span class="material-symbols-outlined" aria-hidden="true">person_alert</span>
+            <div class="banner-copy">
+              <strong>Add Career Evidence First</strong>
+              <p>Complete your career profile or upload a Master CV so AI has verified achievements to reference.</p>
+              <div class="inline-links-row">
+                <a routerLink="/profile" class="inline-action-link">Complete Profile</a>
+                <a routerLink="/resumes" class="inline-action-link">Upload Master CV</a>
+              </div>
+            </div>
+          </div>
+        }
+
+        <div class="field-group">
+          <label class="field-label" for="cl-job-select">Target Job</label>
+          <select
+            id="cl-job-select"
+            class="field-select"
+            data-cl-job-select
+            [value]="selectedJobId() ?? ''"
+            (change)="onJobSelectChange($event)"
+          >
+            @if (jobOptions().length === 0) {
+              <option value="">No indexed jobs found yet</option>
+            } @else {
+              @for (job of jobOptions(); track job.id) {
+                <option [value]="job.id" [selected]="selectedJobId() === job.id">
+                  {{ job.title }} — {{ job.companyName }}@if (job.country) { ({{ job.country }})}@if (job.matchPercentage !== null) { · {{ job.matchPercentage }}% fit}
+                </option>
+              }
+            }
+          </select>
+          @if (selectedJobOption(); as selJob) {
+            <span class="field-hint">
+              Selected: <strong>{{ selJob.companyName }}</strong>@if (selJob.country) { · {{ selJob.country }}}
+            </span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cl-tailored-select">Linked Tailored CV (Optional)</label>
+          <select
+            id="cl-tailored-select"
+            class="field-select"
+            data-cl-tailored-select
+            [value]="selectedTailoredResumeUuid()"
+            (change)="onTailoredResumeSelectChange($event)"
+          >
+            <option value="">Auto-link latest tailored CV for job (or profile &amp; Master CV)</option>
+            @for (tr of orderedTailoredResumes(); track tr.uuid) {
+              <option [value]="tr.uuid" [selected]="selectedTailoredResumeUuid() === tr.uuid">
+                {{ tr.title }} (v{{ tr.versionNumber }})@if (selectedJobId() === tr.jobId) { · Matching job}
+              </option>
+            }
+          </select>
+          @if (!selectedTailoredResumeUuid() && autoMatchedTailoredResume(); as autoCv) {
+            <span class="field-hint">
+              Auto-links latest tailored CV: <strong>{{ autoCv.title }}</strong> (v{{ autoCv.versionNumber }}).
+            </span>
+          } @else if (!selectedTailoredResumeUuid()) {
+            <span class="field-hint">
+              Grounds directly in your verified profile, skills, work history, and approved Master CV.
+            </span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cl-tone-select">Tone Register</label>
+          <select
+            id="cl-tone-select"
+            class="field-select"
+            data-cl-tone-select
+            [value]="selectedTone()"
+            (change)="onToneSelectChange($event)"
+          >
+            @for (opt of toneOptions; track opt.value) {
+              <option [value]="opt.value" [selected]="selectedTone() === opt.value">{{ opt.label }} · {{ opt.subtitle }}</option>
+            }
+          </select>
+          <span class="field-hint">{{ selectedToneMeta().description }}</span>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="cl-notes-input">Personal Notes &amp; Emphasis (Optional)</label>
+          <textarea
+            id="cl-notes-input"
+            class="field-textarea notes-textarea"
+            maxlength="1000"
+            rows="3"
+            data-cl-notes-input
+            [value]="personalNotes()"
+            (input)="onPersonalNotesInput($event)"
+            placeholder="e.g. Highlight SEPA Instant clearing impact, Dutch relocation readiness within 30 days, and product curiosity."
+          ></textarea>
+          <span class="field-hint">{{ personalNotes().length }}/1000 chars</span>
+        </div>
+
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            [checked]="forceRefresh()"
+            data-cl-force-refresh
+            (change)="onForceRefreshChange($event)"
+          />
+          <span>Generate fresh version instead of reusing matching draft</span>
+        </label>
+
+        @if (generateErrorMessage(); as genErr) {
+          <div class="status-banner error" role="alert" data-cl-generate-error>
+            <span class="material-symbols-outlined" aria-hidden="true">error</span>
+            <span class="banner-text">{{ genErr }}</span>
+          </div>
+        }
+
+        <button
+          type="button"
+          class="btn-primary generate-submit-btn"
+          data-cl-action="generate"
+          [disabled]="!canGenerate()"
+          (click)="generateCoverLetter()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ isGenerating() ? 'hourglass_top' : 'auto_awesome' }}
+          </span>
+          <span>{{ isGenerating() ? 'Drafting Grounded Letter...' : 'Generate Cover Letter' }}</span>
+        </button>
+      </section>
+
+      <!-- Saved Cover Letter Versions -->
+      <section class="section-card" data-cl-versions>
+        <div class="versions-head">
+          <div class="card-title-group">
+            <h2>Saved Versions</h2>
+            <p>{{ coverLetters().length }} {{ coverLetters().length === 1 ? 'letter' : 'letters' }} persisted</p>
+          </div>
+          <div class="segmented-mini" role="group" aria-label="Filter cover letter versions">
+            <button
+              type="button"
+              class="seg-btn"
+              [class.is-active]="versionFilterMode() === 'all'"
+              data-cl-filter="all"
+              (click)="setVersionFilterMode('all')"
+            >
+              All
+            </button>
+            <button
+              type="button"
+              class="seg-btn"
+              [class.is-active]="versionFilterMode() === 'job'"
+              [disabled]="selectedJobId() === null"
+              data-cl-filter="job"
+              (click)="setVersionFilterMode('job')"
+            >
+              This Job
+            </button>
+          </div>
+        </div>
+
+        @if (isLoadingList()) {
+          <div class="status-banner info" role="status">
+            <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+            <span>Loading cover letter versions...</span>
+          </div>
+        } @else if (coverLetters().length === 0) {
+          <div class="empty-state compact-empty" data-cl-empty-versions>
+            <span class="material-symbols-outlined" aria-hidden="true">mail</span>
+            <h3>No cover letters yet</h3>
+            <p>Select a target job and click Generate Cover Letter to create version 1.</p>
+          </div>
+        } @else {
+          <div class="version-list">
+            @for (ver of coverLetters(); track ver.uuid) {
+              <div
+                class="version-item"
+                [class.is-selected]="activeCoverLetter()?.uuid === ver.uuid"
+                [attr.data-cl-version-uuid]="ver.uuid"
+                role="button"
+                tabindex="0"
+                (click)="selectCoverLetter(ver.uuid)"
+                (keydown.enter)="selectCoverLetter(ver.uuid)"
+              >
+                <div class="version-top-row">
+                  <strong class="version-title">{{ ver.title }}</strong>
+                  <span class="badge-pill primary">v{{ ver.versionNumber }}</span>
+                </div>
+                <div class="version-sub-row">
+                  <span>{{ ver.jobTitle }} · {{ ver.companyName }}</span>
+                </div>
+                <div class="version-badges-row">
+                  <span class="badge-pill">{{ formatToneLabel(ver.tone) }}</span>
+                  <span class="badge-pill success">{{ ver.wordCount }} words</span>
+                  @if (ver.editedByUser) {
+                    <span class="badge-pill edited">Edited</span>
+                  }
+                  <button
+                    type="button"
+                    class="version-delete-btn"
+                    title="Delete cover letter draft"
+                    [disabled]="deletingUuid() === ver.uuid"
+                    [attr.data-cl-delete-uuid]="ver.uuid"
+                    (click)="requestDeleteVersion(ver, $event)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                  </button>
+                </div>
+                <div class="version-meta-foot">
+                  <span>{{ ver.updatedAt | timeAgo }}</span>
+                  @if (ver.aiModelUsed) {
+                    <span>{{ ver.aiProvider ? ver.aiProvider + ' · ' : '' }}{{ ver.aiModelUsed }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </aside>
+
+    <!-- Main Workspace: Header + Grounding Metadata + Prose Editor & A4 Preview -->
+    <main class="studio-main">
+      @if (isLoadingDetail()) {
+        <section class="section-card">
+          <div class="status-banner info" role="status">
+            <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+            <span>Loading full cover letter draft &amp; alignment evidence...</span>
+          </div>
+        </section>
+      } @else if (activeCoverLetter(); as active) {
+        <section class="section-card" data-cl-header-card>
+          <div class="draft-header-bar">
+            <div class="draft-title-block">
+              <div class="draft-badges">
+                <span class="badge-pill primary">v{{ active.versionNumber }}</span>
+                <span class="badge-pill">{{ formatToneLabel(draftTone()) }}</span>
+                <span class="badge-pill success" data-cl-live-words>{{ liveWordCount() }} words</span>
+                @if (active.editedByUser) {
+                  <span class="badge-pill edited" data-cl-edited-badge>Manually Edited</span>
+                } @else {
+                  <span class="badge-pill" data-cl-ai-badge>AI Grounded Draft</span>
+                }
+                @if (active.aiModelUsed) {
+                  <span class="badge-pill">{{ active.aiProvider ? active.aiProvider + ' · ' : '' }}{{ active.aiModelUsed }}</span>
+                }
+                @if (hasUnsavedChanges()) {
+                  <span class="badge-pill warning-pill" data-cl-dirty-badge>Unsaved Changes</span>
+                }
+              </div>
+              <h2>{{ active.title }}</h2>
+              <p class="draft-subtitle">
+                Target: <strong>{{ active.jobTitle }}</strong> at <strong>{{ active.companyName }}</strong>@if (active.jobCountry) { · {{ active.jobCountry }}}@if (active.tailoredResumeTitle) { · Linked CV: {{ active.tailoredResumeTitle }}}
+              </p>
+            </div>
+
+            <div class="workspace-controls">
+              <div class="segmented-tabs" role="tablist" aria-label="Cover letter view mode">
+                <button
+                  type="button"
+                  role="tab"
+                  class="tab-btn"
+                  [class.is-active]="viewMode() === 'edit'"
+                  [attr.aria-selected]="viewMode() === 'edit'"
+                  data-cl-tab="edit"
+                  (click)="setViewMode('edit')"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">edit_note</span>
+                  <span>Edit Draft</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="tab-btn"
+                  [class.is-active]="viewMode() === 'preview'"
+                  [attr.aria-selected]="viewMode() === 'preview'"
+                  data-cl-tab="preview"
+                  (click)="setViewMode('preview')"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                  <span>Letter Preview</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                class="btn-secondary"
+                data-cl-action="copy"
+                [disabled]="!draftContent().trim()"
+                (click)="copyDraftToClipboard()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">
+                  {{ copiedToClipboard() ? 'check' : 'content_copy' }}
+                </span>
+                <span>{{ copiedToClipboard() ? 'Copied!' : 'Copy Text' }}</span>
+              </button>
+
+              @if (hasUnsavedChanges()) {
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  data-cl-action="reset-edits"
+                  [disabled]="isSaving()"
+                  (click)="resetUnsavedEdits()"
+                >
+                  Discard
+                </button>
+              }
+
+              <button
+                type="button"
+                class="btn-primary"
+                data-cl-action="save"
+                [disabled]="!canSave()"
+                (click)="saveDraftChanges()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">save</span>
+                <span>{{ isSaving() ? 'Saving...' : 'Save Changes' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Export Bar -->
+          <div class="export-bar" data-cl-export-bar>
+            <div class="export-bar-info">
+              <div class="export-bar-title">
+                <span class="material-symbols-outlined" aria-hidden="true">download</span>
+                <strong>Export Business Letter</strong>
+                <span class="badge-pill">{{ formatToneLabel(draftTone()) }}</span>
+                @if (active.tailoredResumeUuid) {
+                  <a
+                    routerLink="/resume-builder"
+                    [queryParams]="{ jobId: active.jobId, tailoredUuid: active.tailoredResumeUuid }"
+                    class="inline-action-link"
+                    data-cl-linked-cv-link
+                  >
+                    Open Linked Tailored CV
+                  </a>
+                } @else {
+                  <a
+                    routerLink="/resume-builder"
+                    [queryParams]="{ jobId: active.jobId }"
+                    class="inline-action-link"
+                    data-cl-resume-builder-link
+                  >
+                    Pair with Tailored CV
+                  </a>
+                }
+              </div>
+              <span class="field-hint">
+                @if (hasUnsavedChanges()) {
+                  Unsaved letter edits will automatically save before exporting.
+                } @else {
+                  Download formal A4 PDF, editable Word (.docx), or clean UTF-8 TXT.
+                }
+              </span>
+            </div>
+
+            <div class="export-bar-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                data-cl-action="export-pdf"
+                [disabled]="isExporting() || isSaving()"
+                (click)="exportDocument('pdf')"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">picture_as_pdf</span>
+                <span>{{ exportingFormat() === 'pdf' ? 'Exporting PDF...' : 'Download PDF' }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                data-cl-action="export-docx"
+                [disabled]="isExporting() || isSaving()"
+                (click)="exportDocument('docx')"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">article</span>
+                <span>{{ exportingFormat() === 'docx' ? 'Exporting DOCX...' : 'Download DOCX' }}</span>
+              </button>
+              <button
+                type="button"
+                class="btn-secondary"
+                data-cl-action="export-txt"
+                [disabled]="isExporting() || isSaving()"
+                (click)="exportDocument('txt')"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">notes</span>
+                <span>{{ exportingFormat() === 'txt' ? 'Exporting TXT...' : 'Download TXT' }}</span>
+              </button>
+            </div>
+          </div>
+
+          @if (exportErrorMessage(); as exportErr) {
+            <div class="status-banner error" role="alert" data-cl-export-error>
+              <span class="material-symbols-outlined" aria-hidden="true">error</span>
+              <span class="banner-text">{{ exportErr }}</span>
+            </div>
+          }
+
+          @if (saveErrorMessage(); as saveErr) {
+            <div class="status-banner error" role="alert" data-cl-save-error>
+              <span class="material-symbols-outlined" aria-hidden="true">error</span>
+              <span class="banner-text">{{ saveErr }}</span>
+            </div>
+          }
+
+          <!-- European Context & Grounding Alignment Metadata -->
+          <div class="intel-grid" data-cl-grounding-panel>
+            @if (activeMetadata()?.workAuthorizationSummary; as authSum) {
+              <div class="intel-tile" data-cl-work-auth>
+                <span class="intel-label">Work Authorization &amp; Notice</span>
+                <p>{{ authSum }}</p>
+              </div>
+            }
+            @if (activeMetadata()?.relocationReadinessNote; as relocNote) {
+              <div class="intel-tile" data-cl-relocation>
+                <span class="intel-label">Relocation &amp; Sponsorship Fit</span>
+                <p>{{ relocNote }}</p>
+              </div>
+            }
+            @if (activeMetadata()?.companyConnectionSummary; as compConn) {
+              <div class="intel-tile intel-tile-wide" data-cl-company-connection>
+                <span class="intel-label">Company Alignment Rationale</span>
+                <p>{{ compConn }}</p>
+              </div>
+            }
+          </div>
+
+          @if (keyAlignmentPoints().length > 0 || highlightedSkills().length > 0) {
+            <div class="alignment-columns">
+              <div class="intel-tile">
+                <span class="intel-label">Key Alignment Points ({{ keyAlignmentPoints().length }})</span>
+                @if (keyAlignmentPoints().length > 0) {
+                  <ul class="alignment-list" data-cl-alignment-points>
+                    @for (pt of keyAlignmentPoints(); track $index) {
+                      <li>{{ pt }}</li>
+                    }
+                  </ul>
+                } @else {
+                  <span class="field-hint">No alignment highlights recorded.</span>
+                }
+              </div>
+
+              <div class="intel-tile">
+                <span class="intel-label">Verified Highlighted Skills ({{ highlightedSkills().length }})</span>
+                @if (highlightedSkills().length > 0) {
+                  <div class="skill-chips" data-cl-highlighted-skills>
+                    @for (skill of highlightedSkills(); track $index) {
+                      <span class="kw-chip is-matched">{{ skill }}</span>
+                    }
+                  </div>
+                } @else {
+                  <span class="field-hint">Verified skills reflected directly inside prose.</span>
+                }
+              </div>
+            </div>
+          }
+
+          @if (groundingWarnings().length > 0) {
+            <div class="status-banner warning" role="status" data-cl-grounding-warnings>
+              <span class="material-symbols-outlined" aria-hidden="true">shield</span>
+              <div class="banner-copy">
+                <strong>Anti-Hallucination &amp; Grounding Verification Notice</strong>
+                <ul class="warning-list">
+                  @for (warn of groundingWarnings(); track $index) {
+                    <li>{{ warn }}</li>
+                  }
+                </ul>
+              </div>
+            </div>
+          }
+        </section>
+
+        @if (viewMode() === 'edit') {
+          <section class="section-card editor-card" data-cl-editor>
+            <div class="card-head">
+              <div class="card-title-group">
+                <h2>Edit Cover Letter Draft</h2>
+                <p>Refine phrasing, greeting, or emphasis; saving recalculates word count and re-checks skill &amp; visa claims.</p>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <div class="field-group">
+                <label class="field-label" for="cl-draft-title">Draft Title</label>
+                <input
+                  id="cl-draft-title"
+                  type="text"
+                  class="field-input"
+                  maxlength="200"
+                  data-cl-draft-title
+                  [value]="draftTitle()"
+                  (input)="onDraftTitleInput($event)"
+                />
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="cl-draft-tone">Tone Tag</label>
+                <select
+                  id="cl-draft-tone"
+                  class="field-select"
+                  data-cl-draft-tone
+                  [value]="draftTone()"
+                  (change)="onDraftToneChange($event)"
+                >
+                  @for (opt of toneOptions; track opt.value) {
+                    <option [value]="opt.value" [selected]="draftTone() === opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="cl-draft-notes">Personal Motivation Notes</label>
+              <textarea
+                id="cl-draft-notes"
+                class="field-textarea"
+                rows="2"
+                maxlength="1000"
+                data-cl-draft-notes
+                [value]="draftPersonalNotes()"
+                (input)="onDraftPersonalNotesInput($event)"
+                placeholder="Optional personal context kept with this version..."
+              ></textarea>
+              <span class="field-hint">{{ draftPersonalNotes().length }}/1000 chars</span>
+            </div>
+
+            <div class="field-group">
+              <div class="content-label-row">
+                <label class="field-label" for="cl-draft-content">Letter Body</label>
+                <span class="field-hint" data-cl-char-word-count>
+                  {{ liveWordCount() }} words · {{ liveCharCount() }}/15000 chars
+                </span>
+              </div>
+              <textarea
+                id="cl-draft-content"
+                class="field-textarea letter-body-textarea"
+                rows="16"
+                maxlength="15000"
+                data-cl-draft-content
+                [value]="draftContent()"
+                (input)="onDraftContentInput($event)"
+              ></textarea>
+              @if (draftContent().trim().length === 0) {
+                <span class="field-hint error-hint">Cover letter body cannot be empty when saving.</span>
+              }
+            </div>
+
+            <div class="actions-row editor-footer-actions">
+              <button
+                type="button"
+                class="btn-secondary"
+                (click)="setViewMode('preview')"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+                <span>Preview Formatted Letter</span>
+              </button>
+              <button
+                type="button"
+                class="btn-primary"
+                [disabled]="!canSave()"
+                (click)="saveDraftChanges()"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">save</span>
+                <span>{{ isSaving() ? 'Saving...' : 'Save Changes' }}</span>
+              </button>
+            </div>
+          </section>
+        } @else {
+          <section class="section-card" data-cl-preview>
+            <app-cover-letter-preview
+              [tone]="draftTone()"
+              [content]="draftContent()"
+              [jobTitle]="active.jobTitle"
+              [companyName]="active.companyName"
+              [jobCountry]="active.jobCountry"
+              [letterDate]="active.generatedAt || active.createdAt"
+              [metadata]="activeMetadata()"
+            />
+          </section>
+        }
+      } @else {
+        <section class="section-card empty-state workspace-empty" data-cl-workspace-empty>
+          <span class="material-symbols-outlined" aria-hidden="true">article</span>
+          <h3>Ready to compose a company-aligned European cover letter</h3>
+          <p>
+            Select a target job, optional linked tailored CV, and preferred tone on the left to draft a grounded, recruiter-ready letter.
+          </p>
+          <ul class="grounding-pillars">
+            <li><strong>Evidence Grounded:</strong> Cites only verified roles, degrees, metrics, and skills from your profile and CV.</li>
+            <li><strong>Visa &amp; Relocation Clarity:</strong> Accurately reflects your work authorization, notice period, and move readiness.</li>
+            <li><strong>Instant Multi-Format Export:</strong> Download as formal A4 PDF, editable DOCX, or clean plain text.</li>
+          </ul>
+        </section>
+      }
+    </main>
+  </div>
+
+  <app-confirm-dialog
+    [open]="pendingDeleteVersion() !== null"
+    title="Delete Cover Letter Version"
+    [message]="deleteDialogMessage()"
+    confirmLabel="Delete Draft"
+    cancelLabel="Cancel"
+    tone="danger"
+    icon="delete_forever"
+    [busy]="deletingUuid() !== null"
+    (confirmed)="confirmDeleteVersion()"
+    (cancelled)="cancelDeleteVersion()"
+  />
+</div>
+

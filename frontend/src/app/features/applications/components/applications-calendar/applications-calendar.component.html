@@ -1,0 +1,107 @@
+<div class="calendar-workspace" data-applications-calendar>
+  <section class="calendar-card">
+    <header class="calendar-toolbar">
+      <div class="month-nav">
+        <button type="button" class="nav-btn" data-calendar-prev (click)="prevMonth()" aria-label="Previous month">
+          <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+        </button>
+        <h2 class="month-title" data-calendar-month>{{ monthHeading() }}</h2>
+        <button type="button" class="nav-btn" data-calendar-next (click)="nextMonth()" aria-label="Next month">
+          <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+        </button>
+      </div>
+
+      <div class="calendar-legend">
+        <span class="legend-item"><i class="dot is-interview"></i> Interview</span>
+        <span class="legend-item"><i class="dot is-followup"></i> Follow-up</span>
+        <span class="legend-item"><i class="dot is-recruiter"></i> Recruiter</span>
+        <span class="legend-item"><i class="dot is-applied"></i> Applied</span>
+        <button type="button" class="today-btn" data-calendar-today (click)="jumpToToday()">Today</button>
+      </div>
+    </header>
+
+    <div class="weekday-row">
+      @for (dayName of weekdayLabels; track dayName) {
+        <div class="weekday-head">{{ dayName }}</div>
+      }
+    </div>
+
+    <div class="month-grid">
+      @for (cell of calendarDays(); track cell.dateKey) {
+        <div
+          class="day-cell"
+          [class.is-outside]="!cell.inCurrentMonth"
+          [class.is-today]="cell.isToday"
+          [attr.data-calendar-day]="cell.dateKey"
+        >
+          <span class="day-num">{{ cell.dayNumber }}</span>
+          <div class="day-events">
+            @for (ev of cell.milestones; track ev.id) {
+              <button
+                type="button"
+                class="event-pill"
+                [class.is-interview]="ev.kind === 'INTERVIEW'"
+                [class.is-followup]="ev.kind === 'APP_FOLLOWUP'"
+                [class.is-recruiter]="ev.kind === 'RECRUITER_FOLLOWUP'"
+                [class.is-applied]="ev.kind === 'APPLIED'"
+                [class.is-overdue]="ev.overdue"
+                [class.is-completed]="ev.completed && ev.kind !== 'APPLIED'"
+                (click)="onMilestoneClick(ev)"
+              >
+                {{ ev.label }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <aside class="agenda-card" aria-label="Upcoming interviews and follow-up reminders">
+    <h3>Interviews &amp; Follow-up Agenda</h3>
+    <p class="agenda-sub">Synchronized across application milestones and recruiter outreach reminders.</p>
+
+    @if (agendaMilestones().length === 0) {
+      <div class="agenda-empty">
+        No interviews or follow-up reminders scheduled yet. Set a follow-up or interview date inside an application or recruiter draft.
+      </div>
+    } @else {
+      <ul class="agenda-list">
+        @for (item of agendaMilestones(); track item.id) {
+          <li
+            class="agenda-item"
+            [class.is-overdue]="item.overdue && !item.completed"
+            [class.is-completed]="item.completed"
+          >
+            <div class="agenda-item-top">
+              <span class="agenda-date">{{ item.dateKey | date: 'MMM d, y' }}</span>
+              <span class="agenda-kind">
+                @switch (item.kind) {
+                  @case ('INTERVIEW') { Interview }
+                  @case ('APP_FOLLOWUP') { Application Follow-up }
+                  @case ('RECRUITER_FOLLOWUP') { Recruiter Follow-up }
+                }
+              </span>
+            </div>
+            <div class="agenda-title">{{ item.label }}</div>
+            <div class="agenda-subline">{{ item.subLabel }}</div>
+            <div class="agenda-actions">
+              <button type="button" class="agenda-btn" (click)="onMilestoneClick(item)">Open</button>
+              @if (!item.completed && (item.kind === 'APP_FOLLOWUP' || item.kind === 'RECRUITER_FOLLOWUP')) {
+                <button
+                  type="button"
+                  class="agenda-btn is-done"
+                  [attr.data-complete-reminder]="item.id"
+                  (click)="onCompleteAgendaItem(item)"
+                >
+                  Mark Done
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  </aside>
+</div>
+

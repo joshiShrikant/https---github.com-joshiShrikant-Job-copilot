@@ -1,0 +1,639 @@
+<section class="section-card review-panel" aria-label="Master resume review and approval workspace">
+  <div class="card-head">
+    <div class="card-title-group">
+      <div class="review-title-line">
+        <h2>Review &amp; Approve: {{ resume().title }}</h2>
+        <span class="badge-pill primary">v{{ resume().versionNumber }}</span>
+        @if (effectiveStatus() === 'APPROVED') {
+          <span class="badge-pill success">Master Approved</span>
+        } @else if (effectiveStatus() === 'PARSED') {
+          <span class="badge-pill warning">Parsed · Review Required</span>
+        } @else {
+          <span class="badge-pill">Not Parsed</span>
+        }
+        @if (parseResult()?.aiModelUsed; as model) {
+          <span class="badge-pill">{{ parseResult()?.aiProvider }} · {{ model }}</span>
+        }
+      </div>
+      <p>
+        Verify, edit, or complete extracted CV qualifications before approving. Your confirmed data
+        will update your active master resume and sync into your candidate profile.
+      </p>
+    </div>
+
+    <div class="review-head-actions">
+      <button
+        type="button"
+        class="btn-secondary parse-trigger-btn"
+        [disabled]="isParsing() || isApproving()"
+        (click)="requestAiParse(true)"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+        @if (isParsing()) {
+          Parsing CV...
+        } @else if (effectiveStatus() === 'NOT_PARSED') {
+          Parse with AI
+        } @else {
+          Re-parse CV
+        }
+      </button>
+
+      <button type="button" class="btn-icon" (click)="closePanel()">
+        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+        Close
+      </button>
+    </div>
+  </div>
+
+  @if (isLoadingDraft()) {
+    <div class="status-banner info" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+      <span>Loading parsed resume draft...</span>
+    </div>
+  } @else if (isParsing()) {
+    <div class="status-banner info" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">hourglass_top</span>
+      <span>Extracting text from {{ resume().fileName }} and structuring CV sections with AI...</span>
+    </div>
+  } @else if (!hasEditableDraft()) {
+    <div class="empty-state">
+      <span class="material-symbols-outlined" aria-hidden="true">fact_check</span>
+      <h3>No parsed CV draft saved yet</h3>
+      <p>
+        Run <strong>Parse with AI</strong> to automatically extract skills, work history, projects,
+        and education from {{ resume().fileName }}, or enter your CV structure manually.
+      </p>
+      <div class="empty-actions">
+        <button type="button" class="btn-primary" (click)="requestAiParse(true)">
+          <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+          Parse CV with AI
+        </button>
+        <button type="button" class="btn-secondary" (click)="startManualEntry()">
+          Fill Manually
+        </button>
+      </div>
+    </div>
+  } @else {
+    @if (warnings().length > 0) {
+      <div class="status-banner warning" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+        <div>
+          <strong>Please verify the following items before approving:</strong>
+          <ul class="warning-list">
+            @for (w of warnings(); track $index) {
+              <li>{{ w }}</li>
+            }
+          </ul>
+        </div>
+      </div>
+    }
+
+    @if (validationError()) {
+      <div class="status-banner error" role="alert">
+        <span class="material-symbols-outlined" aria-hidden="true">error</span>
+        <span>{{ validationError() }}</span>
+      </div>
+    }
+
+    <!-- 1. Profile & Career Highlights -->
+    <div class="subsection-block">
+      <h3>Profile Highlights &amp; Summary</h3>
+      <div class="form-grid">
+        <div class="field-group">
+          <label class="field-label" for="rev-designation">Current Designation</label>
+          <input
+            id="rev-designation"
+            type="text"
+            class="field-input"
+            maxlength="150"
+            [value]="profileDraft().currentDesignation ?? ''"
+            (input)="updateProfileText('currentDesignation', $event)"
+            placeholder="e.g. Senior Java Backend Architect"
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-yoe">Years of Experience</label>
+          <input
+            id="rev-yoe"
+            type="number"
+            step="0.5"
+            min="0"
+            max="70"
+            class="field-input"
+            [value]="profileDraft().yearsOfExperience ?? ''"
+            (input)="updateYearsOfExperience($event)"
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-city">Current City</label>
+          <input
+            id="rev-city"
+            type="text"
+            class="field-input"
+            maxlength="100"
+            [value]="profileDraft().currentCity ?? ''"
+            (input)="updateProfileText('currentCity', $event)"
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-country">Current Country</label>
+          <input
+            id="rev-country"
+            type="text"
+            class="field-input"
+            maxlength="100"
+            [value]="profileDraft().currentCountry ?? ''"
+            (input)="updateProfileText('currentCountry', $event)"
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-work-auth">EU Work Authorization</label>
+          <select
+            id="rev-work-auth"
+            class="field-select"
+            [value]="profileDraft().workAuthorizationStatus ?? ''"
+            (change)="updateWorkAuth($event)"
+          >
+            <option value="">Keep existing / unspecified</option>
+            @for (opt of workAuthOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-relocation">Relocation Preference</label>
+          <select
+            id="rev-relocation"
+            class="field-select"
+            [value]="profileDraft().relocationPreference ?? ''"
+            (change)="updateRelocation($event)"
+          >
+            <option value="">Keep existing / unspecified</option>
+            @for (opt of relocationOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-linkedin">LinkedIn URL</label>
+          <input
+            id="rev-linkedin"
+            type="url"
+            class="field-input"
+            maxlength="255"
+            [value]="profileDraft().linkedinUrl ?? ''"
+            (input)="updateProfileText('linkedinUrl', $event)"
+            placeholder="https://linkedin.com/in/..."
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-github">GitHub URL</label>
+          <input
+            id="rev-github"
+            type="url"
+            class="field-input"
+            maxlength="255"
+            [value]="profileDraft().githubUrl ?? ''"
+            (input)="updateProfileText('githubUrl', $event)"
+            placeholder="https://github.com/..."
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-portfolio">Portfolio URL</label>
+          <input
+            id="rev-portfolio"
+            type="url"
+            class="field-input"
+            maxlength="255"
+            [value]="profileDraft().portfolioUrl ?? ''"
+            (input)="updateProfileText('portfolioUrl', $event)"
+            placeholder="https://your-site.dev"
+          />
+        </div>
+
+        <div class="field-group field-full">
+          <label class="field-label" for="rev-summary">Professional Summary</label>
+          <textarea
+            id="rev-summary"
+            class="field-textarea"
+            maxlength="2000"
+            [value]="summaryDraft()"
+            (input)="updateSummary($event)"
+            placeholder="Concise career summary..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Technical & Domain Skills -->
+    <div class="subsection-block">
+      <div class="subsection-head">
+        <h3>Skills ({{ skillsDraft().length }})</h3>
+      </div>
+
+      <div class="chip-entry-row">
+        <input
+          type="text"
+          class="field-input"
+          placeholder="Add skill (e.g. Spring Boot)"
+          [value]="newSkillName()"
+          (input)="newSkillName.set($any($event.target).value)"
+          (keydown.enter)="$event.preventDefault(); addSkillFromInput()"
+        />
+        <label class="checkbox-row">
+          <input
+            type="checkbox"
+            [checked]="newSkillPrimary()"
+            (change)="newSkillPrimary.set($any($event.target).checked)"
+          />
+          <span>Primary</span>
+        </label>
+        <button type="button" class="btn-secondary" (click)="addSkillFromInput()">Add Skill</button>
+      </div>
+
+      @if (skillsDraft().length > 0) {
+        <div class="editable-items-list">
+          @for (skill of skillsDraft(); track $index) {
+            <div class="skill-edit-row">
+              <input
+                type="text"
+                class="field-input"
+                aria-label="Skill name"
+                [value]="skill.skillName"
+                (input)="updateSkillName($index, $event)"
+              />
+              <input
+                type="number"
+                class="field-input years-input"
+                aria-label="Skill years"
+                min="0"
+                max="70"
+                step="0.5"
+                placeholder="Yrs"
+                [value]="skill.yearsExperience ?? ''"
+                (input)="updateSkillYears($index, $event)"
+              />
+              <select
+                class="field-select prof-select"
+                aria-label="Skill proficiency"
+                [value]="skill.proficiencyLevel ?? ''"
+                (change)="updateSkillProficiency($index, $event)"
+              >
+                <option value="">Intermediate (default)</option>
+                @for (opt of proficiencyOptions; track opt.value) {
+                  <option [value]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+              <label class="checkbox-row">
+                <input
+                  type="checkbox"
+                  [checked]="skill.primary"
+                  (change)="toggleSkillPrimary($index, $event)"
+                />
+                <span>Primary</span>
+              </label>
+              <button
+                type="button"
+                class="btn-danger-ghost"
+                aria-label="Remove skill"
+                (click)="removeSkill($index)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- 3. Work Experiences -->
+    <div class="subsection-block">
+      <div class="subsection-head">
+        <h3>Work Experiences ({{ experiencesDraft().length }})</h3>
+        <button type="button" class="btn-secondary" (click)="addExperience()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Add Role
+        </button>
+      </div>
+
+      @for (exp of experiencesDraft(); track $index) {
+        <div class="entry-card">
+          <div class="entry-card-head">
+            <strong>Role #{{ $index + 1 }}: {{ exp.designation || 'New Role' }}</strong>
+            <button type="button" class="btn-danger-ghost" (click)="removeExperience($index)">
+              Remove
+            </button>
+          </div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">Company <span class="required-mark">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="exp.companyName"
+                (input)="updateExperienceText($index, 'companyName', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Designation <span class="required-mark">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="exp.designation"
+                (input)="updateExperienceText($index, 'designation', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Start Date <span class="required-mark">*</span></label>
+              <input
+                type="date"
+                class="field-input"
+                [value]="exp.startDate ?? ''"
+                (input)="updateExperienceText($index, 'startDate', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">End Date</label>
+              <input
+                type="date"
+                class="field-input"
+                [disabled]="exp.current"
+                [value]="exp.endDate ?? ''"
+                (input)="updateExperienceText($index, 'endDate', $event)"
+              />
+              <label class="checkbox-row">
+                <input
+                  type="checkbox"
+                  [checked]="exp.current"
+                  (change)="updateExperienceCurrent($index, $event)"
+                />
+                <span>Currently working here</span>
+              </label>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Location</label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="exp.location ?? ''"
+                (input)="updateExperienceText($index, 'location', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Skills Used (comma-separated)</label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="exp.skillsUsed.join(', ')"
+                (input)="updateExperienceSkillsUsed($index, $event)"
+              />
+            </div>
+            <div class="field-group field-full">
+              <label class="field-label">Responsibilities &amp; Achievements</label>
+              <textarea
+                class="field-textarea"
+                [value]="exp.description ?? ''"
+                (input)="updateExperienceText($index, 'description', $event)"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- 4. Education -->
+    <div class="subsection-block">
+      <div class="subsection-head">
+        <h3>Education ({{ educationsDraft().length }})</h3>
+        <button type="button" class="btn-secondary" (click)="addEducation()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Add Education
+        </button>
+      </div>
+
+      @for (edu of educationsDraft(); track $index) {
+        <div class="entry-card">
+          <div class="entry-card-head">
+            <strong>Education #{{ $index + 1 }}: {{ edu.institution || 'Institution' }}</strong>
+            <button type="button" class="btn-danger-ghost" (click)="removeEducation($index)">
+              Remove
+            </button>
+          </div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">Institution <span class="required-mark">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="edu.institution"
+                (input)="updateEducationText($index, 'institution', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Degree <span class="required-mark">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="edu.degree"
+                (input)="updateEducationText($index, 'degree', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Field of Study <span class="required-mark">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="edu.fieldOfStudy"
+                (input)="updateEducationText($index, 'fieldOfStudy', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Country <span class="required-mark">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="edu.country ?? ''"
+                (input)="updateEducationText($index, 'country', $event)"
+                placeholder="e.g. Germany"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Start Date <span class="required-mark">*</span></label>
+              <input
+                type="date"
+                class="field-input"
+                [value]="edu.startDate ?? ''"
+                (input)="updateEducationText($index, 'startDate', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">End Date</label>
+              <input
+                type="date"
+                class="field-input"
+                [value]="edu.endDate ?? ''"
+                (input)="updateEducationText($index, 'endDate', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Grade / GPA</label>
+              <input
+                type="text"
+                class="field-input"
+                maxlength="50"
+                [value]="edu.gradeOrGpa ?? ''"
+                (input)="updateEducationText($index, 'gradeOrGpa', $event)"
+                placeholder="e.g. 1.3 / Cum Laude"
+              />
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- 5. Projects, Languages & Certifications -->
+    <div class="subsection-block">
+      <div class="subsection-head">
+        <h3>Projects, Languages &amp; Certifications</h3>
+        <button type="button" class="btn-secondary" (click)="addProject()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Add Project
+        </button>
+      </div>
+
+      @for (proj of projectsDraft(); track $index) {
+        <div class="entry-card">
+          <div class="entry-card-head">
+            <strong>Project #{{ $index + 1 }}: {{ proj.name || 'New Project' }}</strong>
+            <button type="button" class="btn-danger-ghost" (click)="removeProject($index)">
+              Remove
+            </button>
+          </div>
+          <div class="form-grid">
+            <div class="field-group">
+              <label class="field-label">Project Name <span class="required-mark">*</span></label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="proj.name"
+                (input)="updateProjectText($index, 'name', $event)"
+              />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Technologies (comma-separated)</label>
+              <input
+                type="text"
+                class="field-input"
+                [value]="proj.technologies.join(', ')"
+                (input)="updateProjectTechnologies($index, $event)"
+              />
+            </div>
+            <div class="field-group field-full">
+              <label class="field-label">Project URL</label>
+              <input
+                type="url"
+                class="field-input"
+                maxlength="255"
+                [value]="proj.url ?? ''"
+                (input)="updateProjectText($index, 'url', $event)"
+                placeholder="https://github.com/..."
+              />
+            </div>
+            <div class="field-group field-full">
+              <label class="field-label">Description</label>
+              <textarea
+                class="field-textarea"
+                [value]="proj.description ?? ''"
+                (input)="updateProjectText($index, 'description', $event)"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="form-grid">
+        <div class="field-group">
+          <label class="field-label" for="rev-languages">Languages (comma-separated)</label>
+          <input
+            id="rev-languages"
+            type="text"
+            class="field-input"
+            [value]="languagesText()"
+            (input)="languagesText.set($any($event.target).value)"
+            placeholder="e.g. English (C2), German (B1)"
+          />
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="rev-certs">Certifications (comma-separated)</label>
+          <input
+            id="rev-certs"
+            type="text"
+            class="field-input"
+            [value]="certificationsText()"
+            (input)="certificationsText.set($any($event.target).value)"
+            placeholder="e.g. AWS Solutions Architect"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Sync Mode & Approval Submit -->
+    <div class="approval-footer">
+      <div class="sync-mode-group" role="radiogroup" aria-label="Profile sync strategy">
+        <label class="sync-option" [class.is-selected]="syncMode() === 'MERGE'">
+          <input
+            type="radio"
+            name="syncMode"
+            value="MERGE"
+            [checked]="syncMode() === 'MERGE'"
+            (change)="syncMode.set('MERGE')"
+          />
+          <div>
+            <strong>Merge with Existing Profile (Recommended)</strong>
+            <span>Updates matching items and appends new CV skills, roles, and degrees.</span>
+          </div>
+        </label>
+
+        <label class="sync-option" [class.is-selected]="syncMode() === 'REPLACE'">
+          <input
+            type="radio"
+            name="syncMode"
+            value="REPLACE"
+            [checked]="syncMode() === 'REPLACE'"
+            (change)="syncMode.set('REPLACE')"
+          />
+          <div>
+            <strong>Replace Profile Collections</strong>
+            <span>Replaces profile skills, work history, and education with this confirmed CV.</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="actions-row">
+        <button type="button" class="btn-secondary" (click)="closePanel()">Cancel</button>
+        <button
+          type="button"
+          class="btn-primary approve-submit-btn"
+          [disabled]="isApproving() || isParsing()"
+          (click)="submitApproval()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">verified</span>
+          @if (isApproving()) {
+            Approving &amp; Syncing...
+          } @else {
+            Approve Master CV &amp; Sync to Profile
+          }
+        </button>
+      </div>
+    </div>
+  }
+</section>

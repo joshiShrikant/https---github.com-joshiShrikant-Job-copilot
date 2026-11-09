@@ -1,0 +1,85 @@
+<div class="user-menu-wrapper">
+  <button
+    type="button"
+    class="user-trigger"
+    (click)="toggleMenu()"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="isOpen()"
+    aria-label="Open user account menu"
+  >
+    <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+    <span class="user-meta">
+      <span class="user-name">{{ displayName() }}</span>
+    </span>
+    <span class="material-symbols-outlined chevron" [class.rotated]="isOpen()" aria-hidden="true">
+      expand_more
+    </span>
+  </button>
+
+  @if (isOpen()) {
+    <div class="user-dropdown" role="menu" aria-label="User account actions">
+      <div class="menu-account-header">
+        <span class="avatar avatar-lg" aria-hidden="true">{{ initials() }}</span>
+        <div class="account-details">
+          <div class="account-name">{{ displayName() }}</div>
+          <div class="account-subtitle">{{ secondaryLabel() }}</div>
+        </div>
+      </div>
+
+      <div class="menu-divider" role="separator"></div>
+
+      <a routerLink="/profile" class="menu-item" role="menuitem" (click)="closeMenu()">
+        <span class="material-symbols-outlined menu-icon" aria-hidden="true">account_circle</span>
+        <span>My Profile</span>
+      </a>
+
+      <a routerLink="/notifications" class="menu-item" role="menuitem" (click)="closeMenu()">
+        <span class="material-symbols-outlined menu-icon" aria-hidden="true">notifications</span>
+        <span>Notifications</span>
+      </a>
+
+      <a routerLink="/settings" class="menu-item" role="menuitem" (click)="closeMenu()">
+        <span class="material-symbols-outlined menu-icon" aria-hidden="true">settings</span>
+        <span>Settings</span>
+      </a>
+
+      <div class="menu-divider" role="separator"></div>
+
+      <button
+        type="button"
+        class="menu-item theme-menu-btn"
+        role="menuitem"
+        (click)="onThemeToggleClick()"
+      >
+        <span class="material-symbols-outlined menu-icon" aria-hidden="true">
+          {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
+        </span>
+        <span>{{ isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode' }}</span>
+      </button>
+
+      <div class="menu-divider" role="separator"></div>
+
+      @if (isAuthenticated()) {
+        <button
+          type="button"
+          class="menu-item danger-menu-item"
+          role="menuitem"
+          (click)="onLogoutClick()"
+        >
+          <span class="material-symbols-outlined menu-icon" aria-hidden="true">logout</span>
+          <span>Sign out</span>
+        </button>
+      } @else {
+        <a routerLink="/auth/login" class="menu-item" role="menuitem" (click)="closeMenu()">
+          <span class="material-symbols-outlined menu-icon" aria-hidden="true">login</span>
+          <span>Sign in</span>
+        </a>
+
+        <a routerLink="/auth/register" class="menu-item" role="menuitem" (click)="closeMenu()">
+          <span class="material-symbols-outlined menu-icon" aria-hidden="true">person_add</span>
+          <span>Create account</span>
+        </a>
+      }
+    </div>
+  }
+</div>

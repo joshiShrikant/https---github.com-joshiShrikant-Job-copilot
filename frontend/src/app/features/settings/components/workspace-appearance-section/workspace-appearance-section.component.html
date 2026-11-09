@@ -1,0 +1,125 @@
+<div class="settings-stack">
+  @if (statusMessage()) {
+    <div class="status-banner success" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ statusMessage() }}</span>
+    </div>
+  }
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Theme &amp; Visual Appearance</h2>
+        <p>Switch between high-clarity light mode and contrast-tuned dark mode. Changes apply immediately.</p>
+      </div>
+      <span class="badge-pill primary">{{ activeTheme() === 'dark' ? 'Dark Mode' : 'Light Mode' }}</span>
+    </div>
+
+    <div class="choice-grid two-col" role="radiogroup" aria-label="Workspace color theme">
+      <button
+        type="button"
+        role="radio"
+        class="choice-card"
+        data-theme-choice="light"
+        [class.is-selected]="activeTheme() === 'light'"
+        [attr.aria-checked]="activeTheme() === 'light'"
+        (click)="selectTheme('light')"
+      >
+        <div class="choice-head">
+          <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
+          <strong>Light Workspace</strong>
+        </div>
+        <p>Crisp neutral canvas with high-contrast slate typography for daytime focus.</p>
+      </button>
+
+      <button
+        type="button"
+        role="radio"
+        class="choice-card"
+        data-theme-choice="dark"
+        [class.is-selected]="activeTheme() === 'dark'"
+        [attr.aria-checked]="activeTheme() === 'dark'"
+        (click)="selectTheme('dark')"
+      >
+        <div class="choice-head">
+          <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
+          <strong>Dark Workspace</strong>
+        </div>
+        <p>Low-glare midnight surface tuned for extended evening review sessions.</p>
+      </button>
+    </div>
+  </section>
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Layout &amp; Workspace Density</h2>
+        <p>Customize sidebar defaults and spacing density on this browser.</p>
+      </div>
+    </div>
+
+    <div class="choice-grid two-col" role="radiogroup" aria-label="Workspace layout density">
+      @for (option of densityOptions; track option.value) {
+        <button
+          type="button"
+          role="radio"
+          class="choice-card"
+          [attr.data-density-choice]="option.value"
+          [class.is-selected]="activeDensity() === option.value"
+          [attr.aria-checked]="activeDensity() === option.value"
+          (click)="selectDensity(option.value)"
+        >
+          <div class="choice-head">
+            <span class="material-symbols-outlined" aria-hidden="true">{{ option.icon }}</span>
+            <strong>{{ option.label }}</strong>
+          </div>
+          <p>{{ option.description }}</p>
+        </button>
+      }
+    </div>
+
+    <label class="toggle-row">
+      <div class="toggle-copy">
+        <strong>Collapse Desktop Sidebar by Default</strong>
+        <span>Keep navigation icons compact on desktop viewports (&ge; 1024px) to maximize content width.</span>
+      </div>
+      <input
+        id="pref-sidebar-collapsed"
+        type="checkbox"
+        [checked]="isSidebarCollapsed()"
+        (change)="onSidebarCollapseToggle($event)"
+      />
+    </label>
+  </section>
+
+  <section class="settings-card">
+    <div class="card-head">
+      <div>
+        <h2>Alert Cadence &amp; Digests</h2>
+        <p>Choose how frequently you want job match notifications summarized in your browser workspace.</p>
+      </div>
+      <span class="badge-pill">{{ activeCadence() }}</span>
+    </div>
+
+    <div class="choice-grid three-col" role="radiogroup" aria-label="Notification alert cadence">
+      @for (option of cadenceOptions; track option.value) {
+        <button
+          type="button"
+          role="radio"
+          class="choice-card"
+          [attr.data-cadence-choice]="option.value"
+          [class.is-selected]="activeCadence() === option.value"
+          [attr.aria-checked]="activeCadence() === option.value"
+          (click)="selectCadence(option.value)"
+        >
+          <div class="choice-head">
+            <span class="material-symbols-outlined" aria-hidden="true">{{ option.icon }}</span>
+            <strong>{{ option.label }}</strong>
+          </div>
+          <p>{{ option.description }}</p>
+        </button>
+      }
+    </div>
+  </section>
+</div>
+

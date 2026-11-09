@@ -1,0 +1,325 @@
+<div class="autopilot-page">
+  <app-page-header
+    title="Recommended Jobs & Autopilot"
+    icon="auto_awesome"
+    [badge]="headerBadge()"
+    subtitle="Personalized European tech job recommendations ranked by profile skill fit, seniority compatibility, target countries, and verified visa sponsorship."
+  >
+    <div page-actions class="header-actions">
+      @if (status(); as s) {
+        <button
+          type="button"
+          class="toolbar-btn"
+          [attr.data-autopilot-pause-btn]="!s.autopilotPaused ? 'true' : null"
+          [attr.data-autopilot-resume-btn]="s.autopilotPaused ? 'true' : null"
+          [disabled]="togglingPause()"
+          (click)="togglePause()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">
+            {{ s.autopilotPaused ? 'play_circle' : 'pause_circle' }}
+          </span>
+          <span>
+            {{
+              togglingPause()
+                ? 'Updating...'
+                : s.autopilotPaused
+                  ? 'Resume Autopilot'
+                  : 'Pause Autopilot'
+            }}
+          </span>
+        </button>
+      }
+
+      <button
+        type="button"
+        class="primary-btn"
+        data-autopilot-run-btn
+        [disabled]="scanning()"
+        (click)="runAutopilotScan()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+        <span>{{ scanning() ? 'Running Autopilot Scan...' : 'Run Autopilot Scan' }}</span>
+      </button>
+
+      <a routerLink="/settings" class="toolbar-btn">
+        <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+        <span>Search Criteria</span>
+      </a>
+    </div>
+  </app-page-header>
+
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert" data-autopilot-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ errorMessage() }}</span>
+      <button type="button" class="banner-btn" (click)="loadAll()">Retry</button>
+    </div>
+  }
+
+  @if (noticeMessage()) {
+    <div class="status-banner success" role="status" data-autopilot-notice>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ noticeMessage() }}</span>
+    </div>
+  }
+
+  @if (status(); as s) {
+    <section class="status-deck" data-autopilot-status-card>
+      <div class="deck-stats">
+        <div class="stat-pill">
+          <span>Match Threshold</span>
+          <strong>≥ {{ s.minMatchScore }}%</strong>
+        </div>
+        <div class="stat-pill">
+          <span>Recommended Roles</span>
+          <strong data-autopilot-rec-count>{{ s.recommendedJobsCount }}</strong>
+        </div>
+        <div class="stat-pill">
+          <span>Unread Alerts</span>
+          <a routerLink="/notifications" class="alert-link">{{ s.unreadNotificationsCount }} unread</a>
+        </div>
+        <div class="stat-pill">
+          <span>Last Scan</span>
+          <strong>{{ s.lastAutopilotRunAt ? (s.lastAutopilotRunAt | timeAgo) : 'Not run yet' }}</strong>
+        </div>
+        <div class="stat-pill">
+          <span>Email Digest</span>
+          <strong>
+            @if (s.emailNotificationsEnabled && s.serverEmailRelayEnabled) {
+              Opted-in &amp; Server Relay Active
+            } @else if (s.emailNotificationsEnabled) {
+              Opted-in (Server SMTP Relay Disabled)
+            } @else {
+              In-App Alerts Only
+            }
+          </strong>
+        </div>
+      </div>
+
+      <div class="scan-toggles">
+        <label class="toggle-chip">
+          <input
+            type="checkbox"
+            [ngModel]="refreshExternalJobs()"
+            (ngModelChange)="refreshExternalJobs.set($event)"
+          />
+          <span>Refresh external connectors (if cooldown permits)</span>
+        </label>
+        <label class="toggle-chip">
+          <input
+            type="checkbox"
+            [ngModel]="analyzeTopMatchesWithAi()"
+            (ngModelChange)="analyzeTopMatchesWithAi.set($event)"
+          />
+          <span>Run optional AI semantic enrichment on top matches</span>
+        </label>
+      </div>
+    </section>
+  }
+
+  <section class="filters-bar" aria-label="Recommendation filters">
+    <label class="filter-field">
+      <span>Override Min Score (%)</span>
+      <input
+        type="number"
+        min="0"
+        max="100"
+        class="score-input"
+        placeholder="Default"
+        data-rec-filter-score
+        [ngModel]="minMatchScoreFilter()"
+        (ngModelChange)="minMatchScoreFilter.set($event)"
+      />
+    </label>
+
+    <label class="toggle-chip">
+      <input
+        type="checkbox"
+        data-rec-filter-sponsor
+        [ngModel]="verifiedSponsorsOnly()"
+        (ngModelChange)="verifiedSponsorsOnly.set($event); onFiltersChanged()"
+      />
+      <span>Verified Sponsors Only</span>
+    </label>
+
+    <label class="toggle-chip">
+      <input
+        type="checkbox"
+        data-rec-filter-exclude-applied
+        [ngModel]="excludeApplied()"
+        (ngModelChange)="excludeApplied.set($event); onFiltersChanged()"
+      />
+      <span>Hide Already Applied</span>
+    </label>
+
+    <button type="button" class="toolbar-btn" data-rec-apply-filters (click)="onFiltersChanged()">
+      Apply Filter
+    </button>
+  </section>
+
+  @if (loading() && !recommendedPage()) {
+    <section class="surface-card" role="status" data-autopilot-loading>
+      Loading autopilot job recommendations...
+    </section>
+  } @else if (recommendedPage(); as recPage) {
+    @if (recPage.content.length === 0) {
+      <section class="surface-card empty-state" data-recommended-empty>
+        <strong>No active jobs currently meet the selected threshold (≥ {{ recPage.minMatchScoreUsed }}%).</strong>
+        <p>
+          Try running a manual autopilot scan above, lowering your match threshold, or reviewing your
+          <a routerLink="/settings" class="inline-link">Search Preferences</a> and
+          <a routerLink="/profile" class="inline-link">Candidate Profile</a> skills.
+        </p>
+      </section>
+    } @else {
+      <div class="recommended-list" data-recommended-list>
+        @for (item of recPage.content; track item.job.id) {
+          @let job = item.job;
+          <article class="rec-card" [attr.data-recommended-job]="job.id">
+            <header class="rec-head">
+              <div class="rec-title-group">
+                <div class="badge-row">
+                  <span class="match-pill">
+                    {{ job.matchPercentage ?? 0 }}% Match
+                  </span>
+                  <app-status-badge [sponsorStatus]="job.sponsorStatus" size="sm" />
+                  <app-status-badge [workArrangement]="job.workArrangement" size="sm" />
+                  @if (item.matchesPreferredCountry) {
+                    <span class="meta-pill is-accent">Preferred Country</span>
+                  }
+                  @if (item.matchesPreferredTitle) {
+                    <span class="meta-pill is-accent">Role Fit</span>
+                  }
+                  @if (item.alreadyApplied) {
+                    <span class="meta-pill is-applied">Already Applied</span>
+                  }
+                </div>
+                <h3>{{ job.title }}</h3>
+                <p class="company-line">
+                  {{ job.companyName }} · {{ job.location || job.country }} ·
+                  {{ job.salaryMin | salaryRange:job.salaryMax:job.salaryCurrency:job.salaryPeriod:false }}
+                </p>
+              </div>
+
+              <div class="rec-actions">
+                <button
+                  type="button"
+                  class="toolbar-btn"
+                  [disabled]="savingJobIds().has(job.id)"
+                  (click)="toggleSave(item)"
+                >
+                  {{ job.isSaved ? 'Saved' : 'Save' }}
+                </button>
+                <a class="toolbar-btn" [routerLink]="['/jobs']" [queryParams]="{ jobId: job.id }">
+                  Inspect
+                </a>
+                <a class="toolbar-btn" [routerLink]="['/applications']" [queryParams]="{ jobId: job.id }">
+                  Track Application
+                </a>
+                <a class="toolbar-btn" [routerLink]="['/interview-prep']" [queryParams]="{ jobId: job.id }">
+                  Interview Prep
+                </a>
+              </div>
+            </header>
+
+            @if (item.sponsorshipEvidenceSummary || item.experienceCompatibility) {
+              <div class="evidence-strip">
+                @if (item.experienceCompatibility) {
+                  <span><strong>Experience fit:</strong> {{ item.experienceCompatibility }}</span>
+                }
+                @if (item.sponsorshipEvidenceSummary) {
+                  <span><strong>Sponsorship:</strong> {{ item.sponsorshipEvidenceSummary }}</span>
+                }
+              </div>
+            }
+
+            @if (item.aiAnalysisSummary) {
+              <p class="ai-summary">{{ item.aiAnalysisSummary }}</p>
+            }
+
+            @if (item.recommendationReasons.length > 0) {
+              <ul class="reasons-list">
+                @for (reason of item.recommendationReasons; track $index) {
+                  <li>{{ reason }}</li>
+                }
+              </ul>
+            }
+
+            @if (item.matchingSkills.length > 0 || item.missingSkills.length > 0) {
+              <div class="skills-row">
+                @for (skill of item.matchingSkills; track $index) {
+                  <span class="skill-chip is-match">{{ skill }}</span>
+                }
+                @for (gap of item.missingSkills; track $index) {
+                  <span class="skill-chip is-gap">Gap: {{ gap }}</span>
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+
+      @if (recPage.totalPages > 1) {
+        <nav class="pagination-row" aria-label="Recommended jobs pagination">
+          <button
+            type="button"
+            class="toolbar-btn"
+            [disabled]="!recPage.hasPrevious"
+            (click)="loadRecommendations(recPage.pageNumber - 1)"
+          >
+            Previous
+          </button>
+          <span>Page {{ recPage.pageNumber + 1 }} of {{ recPage.totalPages }}</span>
+          <button
+            type="button"
+            class="toolbar-btn"
+            [disabled]="!recPage.hasNext"
+            (click)="loadRecommendations(recPage.pageNumber + 1)"
+          >
+            Next
+          </button>
+        </nav>
+      }
+    }
+  }
+
+  @if (historyPage(); as hist) {
+    <section class="surface-card" data-autopilot-history>
+      <h2>Autopilot Run Audit History</h2>
+      @if (hist.content.length === 0) {
+        <p class="empty-note">No autopilot runs recorded yet. Trigger a manual scan above to test your rules.</p>
+      } @else {
+        <div class="table-scroll">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Started</th>
+                <th>Trigger</th>
+                <th>Status</th>
+                <th>Evaluated</th>
+                <th>Matches</th>
+                <th>Alerts</th>
+                <th>Email</th>
+                <th>Summary</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of hist.content; track log.id) {
+                <tr [attr.data-autopilot-run]="log.id">
+                  <td>{{ log.startedAt | date: 'short' }}</td>
+                  <td>{{ log.triggerType }}</td>
+                  <td>{{ log.status }}</td>
+                  <td>{{ log.jobsEvaluated }}</td>
+                  <td>{{ log.newMatchesFound }} / {{ log.recommendedJobsCount }}</td>
+                  <td>{{ log.notificationsCreated }}</td>
+                  <td>{{ log.emailDispatched ? 'Sent' : 'No' }}</td>
+                  <td>{{ log.summaryMessage || log.errorMessage || '—' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+</div>

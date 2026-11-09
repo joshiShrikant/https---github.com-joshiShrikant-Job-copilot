@@ -1,0 +1,667 @@
+<div class="companies-page">
+  <app-page-header
+    title="Employer Intelligence Directory"
+    subtitle="Research European hiring employers, official visa sponsor registry status, engineering tech stacks, active open jobs, and personal target company lists."
+    icon="apartment"
+    [badge]="headerBadge()"
+  >
+    <div page-actions class="header-actions">
+      <a routerLink="/sponsorship" class="toolbar-btn">
+        <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+        <span>Visa Sponsorship</span>
+      </a>
+      <a routerLink="/jobs" class="toolbar-btn primary-link">
+        <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+        <span>Discover Jobs</span>
+      </a>
+    </div>
+  </app-page-header>
+
+  @if (searchResult(); as sr) {
+    <section class="kpi-strip" aria-label="Employer directory summary" data-companies-kpis>
+      <div class="kpi-card">
+        <span class="kpi-label">Matching Employers</span>
+        <strong class="kpi-value">{{ sr.totalElements }}</strong>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Verified Visa Sponsors</span>
+        <strong class="kpi-value">{{ sr.verifiedSponsorsTotal }}</strong>
+      </div>
+      <button
+        type="button"
+        class="kpi-card is-interactive"
+        [class.is-active]="filters().savedOnly"
+        (click)="onToggleFilter('savedOnly')"
+        data-companies-kpi-saved
+      >
+        <span class="kpi-label">Saved Target Companies</span>
+        <strong class="kpi-value">{{ sr.savedCompaniesTotal }}</strong>
+      </button>
+    </section>
+  }
+
+  <section class="filter-panel" aria-label="Filter employers">
+    <form class="filter-row" (submit)="$event.preventDefault(); onSearchSubmit()">
+      <input
+        type="text"
+        class="text-input search-input"
+        placeholder="Search employer, city, industry, tech, or KvK ID..."
+        [value]="filters().query"
+        (input)="onFilterFieldChange('query', $any($event.target).value)"
+        data-companies-query-input
+      />
+
+      <select
+        class="select-input"
+        aria-label="Filter by country"
+        [value]="filters().country"
+        (change)="onFilterFieldChange('country', $any($event.target).value, true)"
+        data-companies-country-select
+      >
+        <option value="">All European Countries</option>
+        @for (country of countryOptions; track country) {
+          <option [value]="country">{{ country }}</option>
+        }
+      </select>
+
+      <input
+        type="text"
+        class="text-input compact-input"
+        placeholder="Industry (e.g. FinTech)"
+        [value]="filters().industry"
+        (input)="onFilterFieldChange('industry', $any($event.target).value)"
+        data-companies-industry-input
+      />
+
+      <input
+        type="text"
+        class="text-input compact-input"
+        placeholder="Tech (e.g. Java, Angular)"
+        [value]="filters().tech"
+        (input)="onFilterFieldChange('tech', $any($event.target).value)"
+        data-companies-tech-input
+      />
+
+      <select
+        class="select-input"
+        aria-label="Sort companies"
+        [value]="filters().sort"
+        (change)="onFilterFieldChange('sort', $any($event.target).value, true)"
+        data-companies-sort-select
+      >
+        @for (option of sortOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+
+      <button type="submit" class="primary-btn" data-companies-search-btn>Search</button>
+    </form>
+
+    <div class="toggle-row">
+      <button
+        type="button"
+        class="toggle-chip"
+        [class.is-active]="filters().verifiedSponsorOnly"
+        (click)="onToggleFilter('verifiedSponsorOnly')"
+        data-companies-toggle-verified
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+        <span>Verified Sponsors Only</span>
+      </button>
+
+      <button
+        type="button"
+        class="toggle-chip"
+        [class.is-active]="filters().withOpenJobsOnly"
+        (click)="onToggleFilter('withOpenJobsOnly')"
+        data-companies-toggle-open-jobs
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">work</span>
+        <span>With Open Jobs</span>
+      </button>
+
+      <button
+        type="button"
+        class="toggle-chip"
+        [class.is-active]="filters().savedOnly"
+        (click)="onToggleFilter('savedOnly')"
+        data-companies-toggle-saved
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">bookmark</span>
+        <span>Saved Targets Only</span>
+      </button>
+
+      @if (activeFilterCount() > 0) {
+        <button
+          type="button"
+          class="clear-link-btn"
+          (click)="resetFilters()"
+          data-companies-reset-btn
+        >
+          Reset Filters ({{ activeFilterCount() }})
+        </button>
+      }
+    </div>
+  </section>
+
+  @if (searchErrorMessage()) {
+    <div class="feedback-banner error" role="alert" data-companies-search-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ searchErrorMessage() }}</span>
+    </div>
+  }
+
+  @if (actionErrorMessage()) {
+    <div class="feedback-banner error" role="alert" data-companies-action-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ actionErrorMessage() }}</span>
+    </div>
+  }
+
+  @if (actionNotice()) {
+    <div class="feedback-banner info" role="status" data-companies-action-notice>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ actionNotice() }}</span>
+    </div>
+  }
+
+  <div class="directory-layout">
+    <section class="directory-list-col" aria-label="Employer directory results">
+      @if (isSearching() && companies().length === 0) {
+        <div class="panel state-box" data-companies-loading>
+          <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+          <p>Loading European employer directory...</p>
+        </div>
+      } @else if (companies().length === 0) {
+        <div class="panel state-box" data-companies-empty>
+          <span class="material-symbols-outlined" aria-hidden="true">apartment</span>
+          @if (activeFilterCount() > 0) {
+            <h3>No employers match these filters</h3>
+            <p>Try broadening your country, tech stack, or sponsor verification filters.</p>
+            <button type="button" class="toolbar-btn" (click)="resetFilters()">Reset Filters</button>
+          } @else {
+            <h3>No employers indexed yet</h3>
+            <p>
+              Employers populate automatically when job feeds are ingested or government sponsor registers are synced.
+            </p>
+            <a routerLink="/sponsorship" class="toolbar-btn">Explore Visa Sponsorship</a>
+          }
+        </div>
+      } @else {
+        <div class="company-cards-stack">
+          @for (company of companies(); track company.id) {
+            <article
+              class="company-card"
+              [class.is-selected]="selectedSummary()?.id === company.id"
+              tabindex="0"
+              role="button"
+              [attr.aria-pressed]="selectedSummary()?.id === company.id"
+              [attr.data-company-card]="company.id"
+              (click)="selectCompany(company.id)"
+              (keydown.enter)="selectCompany(company.id)"
+              (keydown.space)="$event.preventDefault(); selectCompany(company.id)"
+            >
+              <div class="card-top">
+                <div>
+                  <h3>{{ company.name }}</h3>
+                  <p class="card-subtitle">
+                    @if (company.headquartersCity || company.headquartersCountry) {
+                      <span>
+                        {{ company.headquartersCity ? company.headquartersCity + ', ' : '' }}{{ company.headquartersCountry || 'Europe' }}
+                      </span>
+                    } @else {
+                      <span>Europe</span>
+                    }
+                    @if (company.industry) {
+                      <span> · {{ company.industry }}</span>
+                    }
+                    @if (company.companySize) {
+                      <span> · {{ company.companySize }}</span>
+                    }
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  class="bookmark-icon-btn"
+                  [class.is-saved]="company.isSaved"
+                  [disabled]="pendingSaveCompanyIds().has(company.id)"
+                  [attr.aria-label]="company.isSaved ? 'Remove target bookmark' : 'Bookmark target company'"
+                  [attr.data-company-bookmark]="company.id"
+                  (click)="toggleCardBookmark(company, $event)"
+                >
+                  <span class="material-symbols-outlined" aria-hidden="true">
+                    {{ company.isSaved ? 'bookmark_added' : 'bookmark_border' }}
+                  </span>
+                </button>
+              </div>
+
+              <div class="card-badges">
+                @if (company.isVerifiedSponsor) {
+                  <app-status-badge [confidenceLevel]="company.sponsorConfidenceLevel" size="sm" />
+                } @else {
+                  <app-status-badge sponsorStatus="UNCONFIRMED" size="sm" />
+                }
+                @if (company.isSaved && getPriorityTierMeta(company.priorityTier); as tierMeta) {
+                  <app-status-badge
+                    [label]="tierMeta.label"
+                    [tone]="tierMeta.tone"
+                    [icon]="tierMeta.icon"
+                    size="sm"
+                  />
+                }
+              </div>
+
+              <div class="metrics-row">
+                <span class="metric-pill">
+                  <strong>{{ company.activeJobsCount }}</strong> open roles
+                </span>
+                @if (company.sponsorshipJobsCount > 0) {
+                  <span class="metric-pill is-highlight">
+                    <strong>{{ company.sponsorshipJobsCount }}</strong> sponsor-listed
+                  </span>
+                }
+                @if (company.remoteJobsCount > 0) {
+                  <span class="metric-pill">
+                    <strong>{{ company.remoteJobsCount }}</strong> remote
+                  </span>
+                }
+              </div>
+
+              @if (company.techStack.length > 0) {
+                <div class="chips-row">
+                  @for (tech of company.techStack.slice(0, 6); track tech) {
+                    <span class="tech-chip">{{ tech }}</span>
+                  }
+                  @if (company.techStack.length > 6) {
+                    <span class="tech-chip is-muted">+{{ company.techStack.length - 6 }}</span>
+                  }
+                </div>
+              }
+            </article>
+          }
+        </div>
+
+        @if (searchResult(); as pageMeta) {
+          @if (pageMeta.totalPages > 1) {
+            <div class="pager-row" data-companies-pagination>
+              <button
+                type="button"
+                class="toolbar-btn"
+                [disabled]="!pageMeta.hasPrevious"
+                (click)="goToPage(page() - 1)"
+              >
+                Previous
+              </button>
+              <span>Page {{ pageMeta.pageNumber + 1 }} of {{ pageMeta.totalPages }}</span>
+              <button
+                type="button"
+                class="toolbar-btn"
+                [disabled]="!pageMeta.hasNext"
+                (click)="goToPage(page() + 1)"
+              >
+                Next
+              </button>
+            </div>
+          }
+        }
+      }
+    </section>
+
+    <aside class="company-dossier-col" aria-label="Employer profile dossier">
+      @if (isLoadingDetail() && !selectedCompany()) {
+        <div class="panel state-box" data-company-dossier-loading>
+          <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+          <p>Loading employer dossier &amp; active openings...</p>
+        </div>
+      } @else if (detailErrorMessage() && !selectedCompany()) {
+        <div class="panel state-box" data-company-dossier-error>
+          <span class="material-symbols-outlined" aria-hidden="true">error</span>
+          <p>{{ detailErrorMessage() }}</p>
+          <button type="button" class="toolbar-btn" (click)="retrySelectedDossier()">Retry</button>
+        </div>
+      } @else if (selectedCompany(); as dossier) {
+        <div class="panel dossier-card" data-company-dossier>
+          <div class="dossier-head">
+            <div>
+              <span class="kicker">Employer Intelligence Dossier</span>
+              <h2>{{ dossier.name }}</h2>
+              <p class="card-subtitle">
+                {{ dossier.headquartersCity ? dossier.headquartersCity + ', ' : '' }}{{ dossier.headquartersCountry || 'Europe' }}
+                @if (dossier.industry) {
+                  <span> · {{ dossier.industry }}</span>
+                }
+                @if (dossier.companySize) {
+                  <span> · {{ dossier.companySize }}</span>
+                }
+              </p>
+            </div>
+            <div class="dossier-badges">
+              @if (dossier.isVerifiedSponsor) {
+                <app-status-badge [confidenceLevel]="dossier.sponsorConfidenceLevel" size="md" />
+              } @else {
+                <app-status-badge sponsorStatus="UNCONFIRMED" size="md" />
+              }
+            </div>
+          </div>
+
+          <div class="external-links-row">
+            @if (isSafeUrl(dossier.websiteUrl)) {
+              <a
+                class="external-mini-link"
+                [href]="dossier.websiteUrl!"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-company-website-link
+              >
+                <span>Website</span>
+                <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              </a>
+            }
+            @if (isSafeUrl(dossier.careersUrl)) {
+              <a
+                class="external-mini-link"
+                [href]="dossier.careersUrl!"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-company-careers-link
+              >
+                <span>Careers Portal</span>
+                <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+              </a>
+            }
+            <a
+              class="external-mini-link"
+              [routerLink]="['/sponsorship']"
+              [queryParams]="{ companyName: dossier.name, country: dossier.headquartersCountry || 'Netherlands' }"
+            >
+              <span>Check in Visa Sponsorship</span>
+              <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+            </a>
+            <a
+              class="external-mini-link"
+              [routerLink]="['/jobs']"
+              [queryParams]="{ query: dossier.name }"
+            >
+              <span>Filter All Jobs</span>
+              <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+            </a>
+          </div>
+
+          @if (dossier.vacancyCaveat) {
+            <div class="caveat-banner" role="note" data-company-vacancy-caveat>
+              <span class="material-symbols-outlined" aria-hidden="true">warning_amber</span>
+              <div>
+                <strong>Sponsorship Disclaimer:</strong>
+                <span>{{ dossier.vacancyCaveat }}</span>
+              </div>
+            </div>
+          }
+
+          @if (dossier.description) {
+            <p class="dossier-description">{{ dossier.description }}</p>
+          }
+
+          <section class="bookmark-box" data-company-bookmark-editor>
+            <div class="sub-head">
+              <h3>Target Company Tracking</h3>
+              @if (dossier.isSaved && dossier.savedAt) {
+                <span class="muted-meta">Saved {{ dossier.savedAt | timeAgo }}</span>
+              }
+            </div>
+
+            <div class="bookmark-controls">
+              <select
+                class="select-input compact-select"
+                aria-label="Target priority tier"
+                [value]="bookmarkTierDraft()"
+                (change)="bookmarkTierDraft.set($any($event.target).value)"
+                data-company-tier-select
+              >
+                @for (tier of priorityTierOptions; track tier.value) {
+                  <option [value]="tier.value">{{ tier.label }}</option>
+                }
+              </select>
+
+              <button
+                type="button"
+                class="primary-btn"
+                [disabled]="activeDossierPendingSave()"
+                (click)="saveBookmarkDetails()"
+                data-company-save-btn
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">bookmark_added</span>
+                <span>{{ dossier.isSaved ? 'Update Target' : 'Save Target Company' }}</span>
+              </button>
+
+              @if (dossier.isSaved) {
+                <button
+                  type="button"
+                  class="toolbar-btn"
+                  [disabled]="activeDossierPendingSave()"
+                  (click)="removeDossierBookmark()"
+                  data-company-unsave-btn
+                >
+                  Remove Bookmark
+                </button>
+              }
+            </div>
+
+            <textarea
+              rows="2"
+              maxlength="2000"
+              class="notes-input"
+              placeholder="Personal notes (relocation stipend, referral contact, engineering culture)..."
+              [value]="bookmarkNotesDraft()"
+              (input)="bookmarkNotesDraft.set($any($event.target).value)"
+              data-company-notes-input
+            ></textarea>
+          </section>
+
+          @if (dossier.techStack.length > 0 || dossier.activeCountries.length > 0 || dossier.activeCities.length > 0) {
+            <section class="dossier-section">
+              @if (dossier.techStack.length > 0) {
+                <div>
+                  <h4>Engineering Tech Stack (Click to Filter)</h4>
+                  <div class="chips-row">
+                    @for (tech of dossier.techStack; track tech) {
+                      <button
+                        type="button"
+                        class="tech-chip is-clickable"
+                        (click)="applyTechChipFilter(tech)"
+                      >
+                        {{ tech }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              @if (dossier.activeCountries.length > 0 || dossier.activeCities.length > 0) {
+                <div class="footprint-row">
+                  @if (dossier.activeCountries.length > 0) {
+                    <div>
+                      <h4>Active Countries</h4>
+                      <div class="chips-row">
+                        @for (country of dossier.activeCountries; track country) {
+                          <span class="meta-chip">{{ country }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                  @if (dossier.activeCities.length > 0) {
+                    <div>
+                      <h4>Active Cities</h4>
+                      <div class="chips-row">
+                        @for (city of dossier.activeCities; track city) {
+                          <span class="meta-chip">{{ city }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </section>
+          }
+
+          @if (dossier.registryRecords.length > 0 || dossier.countryGuideSummary) {
+            <section class="dossier-section" data-company-sponsorship-evidence>
+              <div class="sub-head">
+                <h4>Official Sponsorship Evidence &amp; Country Guide</h4>
+                @if (isSafeUrl(dossier.officialRegisterUrl)) {
+                  <a
+                    class="external-mini-link"
+                    [href]="dossier.officialRegisterUrl!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Official Register
+                    <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                  </a>
+                }
+              </div>
+
+              @if (dossier.countryGuideSummary) {
+                <p class="guide-note">{{ dossier.countryGuideSummary }}</p>
+              }
+
+              @if (dossier.registryRecords.length > 0) {
+                <div class="registry-stack">
+                  @for (rec of dossier.registryRecords; track rec.id) {
+                    <div class="registry-card">
+                      <div class="sub-head">
+                        <strong>{{ rec.officialRegisteredName }}</strong>
+                        <span class="meta-chip">{{ formatRegistryStatus(rec.status) }}</span>
+                      </div>
+                      <span class="muted-meta">
+                        {{ rec.country }} · {{ rec.registrySource }}
+                        @if (rec.registryIdentifier) {
+                          <span> · {{ rec.registryIdentifier }}</span>
+                        }
+                        @if (rec.verifiedAt) {
+                          <span> · {{ rec.verifiedAt | date:'mediumDate' }}</span>
+                        }
+                      </span>
+                      @if (rec.evidenceNotes) {
+                        <p class="guide-note">{{ rec.evidenceNotes }}</p>
+                      }
+                      @if (isSafeUrl(rec.sourceUrl)) {
+                        <a
+                          class="external-mini-link"
+                          [href]="rec.sourceUrl!"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Verify official source
+                          <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                        </a>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </section>
+          }
+
+          <section class="dossier-section" data-company-open-jobs>
+            <div class="sub-head">
+              <h4>Active Open Jobs ({{ companyJobsPage()?.totalElements ?? dossier.activeJobsCount }})</h4>
+              @if (isLoadingJobs()) {
+                <span class="muted-meta">Refreshing...</span>
+              }
+            </div>
+
+            @if (companyJobsPage()?.content?.length) {
+              <div class="jobs-stack">
+                @for (job of companyJobsPage()!.content; track job.id) {
+                  <div class="mini-job-card" [attr.data-company-job]="job.id">
+                    <div class="mini-job-main">
+                      <div>
+                        <h5>{{ job.title }}</h5>
+                        <p class="muted-meta">
+                          {{ job.location || job.country }} · {{ job.postedAt | timeAgo }}
+                        </p>
+                      </div>
+                      <app-match-score-gauge
+                        [score]="job.matchPercentage"
+                        size="sm"
+                        [showLabel]="false"
+                      />
+                    </div>
+
+                    <div class="chips-row">
+                      <app-status-badge [sponsorStatus]="job.sponsorStatus" size="sm" />
+                      <app-status-badge [workArrangement]="job.workArrangement" size="sm" />
+                      <span class="meta-chip">
+                        {{ job.salaryMin | salaryRange:job.salaryMax:job.salaryCurrency:job.salaryPeriod:true }}
+                      </span>
+                    </div>
+
+                    <div class="external-links-row">
+                      <a
+                        class="external-mini-link"
+                        [routerLink]="['/jobs']"
+                        [queryParams]="{ query: job.title, country: job.country }"
+                      >
+                        Inspect in Discover Jobs
+                        <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
+                      </a>
+                      @if (isSafeUrl(job.originalUrl)) {
+                        <a
+                          class="external-mini-link"
+                          [href]="job.originalUrl!"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Original Posting
+                          <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              @if (companyJobsPage()!.totalPages > 1) {
+                <div class="pager-row">
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    [disabled]="!companyJobsPage()!.hasPrevious"
+                    (click)="goToCompanyJobsPage(jobsPage() - 1)"
+                  >
+                    Previous Roles
+                  </button>
+                  <span>
+                    Page {{ companyJobsPage()!.pageNumber + 1 }} of {{ companyJobsPage()!.totalPages }}
+                  </span>
+                  <button
+                    type="button"
+                    class="toolbar-btn"
+                    [disabled]="!companyJobsPage()!.hasNext"
+                    (click)="goToCompanyJobsPage(jobsPage() + 1)"
+                  >
+                    Next Roles
+                  </button>
+                </div>
+              }
+            } @else if (!isLoadingJobs()) {
+              <p class="guide-note">
+                No active visible openings recorded for this employer right now. Check their careers portal or monitor again after the next job sync.
+              </p>
+            }
+          </section>
+        </div>
+      } @else {
+        <div class="panel state-box" data-company-dossier-empty>
+          <span class="material-symbols-outlined" aria-hidden="true">corporate_fare</span>
+          <h3>Select an Employer</h3>
+          <p>
+            Choose an organization from the directory to inspect verified sponsor registries, engineering tech stack, active openings, and save target tracking notes.
+          </p>
+        </div>
+      }
+    </aside>
+  </div>
+</div>
+

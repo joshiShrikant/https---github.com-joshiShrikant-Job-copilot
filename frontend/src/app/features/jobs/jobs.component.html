@@ -1,0 +1,280 @@
+<div class="jobs-page">
+  <app-page-header
+    title="Discover European Tech Jobs"
+    icon="travel_explore"
+    [badge]="headerBadge()"
+    subtitle="Search European roles with verified visa sponsorship, EU Blue Card pathways, and personalized match scoring."
+  >
+    <div page-actions class="header-actions">
+      <button
+        type="button"
+        class="toolbar-btn"
+        data-jobs-action="toggle-compact"
+        [attr.aria-pressed]="compactCards()"
+        (click)="toggleCompactCards()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ compactCards() ? 'view_agenda' : 'view_stream' }}
+        </span>
+        <span>{{ compactCards() ? 'Standard Cards' : 'Compact Cards' }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="toolbar-btn"
+        data-jobs-action="recalculate-matches"
+        [disabled]="isRecalculatingMatches()"
+        (click)="onRecalculateAllMatches()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">calculate</span>
+        <span>{{ isRecalculatingMatches() ? 'Scoring...' : 'Score Matches' }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="toolbar-btn"
+        data-jobs-action="refresh"
+        [disabled]="isSearching()"
+        (click)="triggerSearch()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        <span>{{ isSearching() ? 'Refreshing...' : 'Refresh' }}</span>
+      </button>
+
+      <a routerLink="/settings" class="toolbar-btn primary-link">
+        <span class="material-symbols-outlined" aria-hidden="true">tune</span>
+        <span>Target Criteria</span>
+      </a>
+    </div>
+  </app-page-header>
+
+  <app-job-filter-bar
+    [filters]="filters()"
+    [totalCount]="searchResult()?.totalElements ?? null"
+    (filtersChange)="onFiltersChange($event)"
+    (resetRequested)="onResetFilters()"
+  />
+
+  @if (searchErrorMessage()) {
+    <div class="status-banner error" role="alert" data-jobs-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ searchErrorMessage() }}</span>
+      <button
+        type="button"
+        class="banner-action-btn"
+        data-jobs-action="retry-search"
+        (click)="triggerSearch()"
+      >
+        Retry
+      </button>
+    </div>
+  }
+
+  @if (actionErrorMessage()) {
+    <div class="status-banner error" role="alert" data-jobs-action-error>
+      <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+      <span class="banner-text">{{ actionErrorMessage() }}</span>
+      <button type="button" class="banner-action-btn" (click)="actionErrorMessage.set(null)">
+        Dismiss
+      </button>
+    </div>
+  }
+
+  @if (pendingAppliedPrompt(); as prompt) {
+    <div class="status-banner confirm-apply" role="status" data-jobs-apply-confirm>
+      <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+      <span class="banner-text">
+        Opened external application for <strong>{{ prompt.title }}</strong>. Did you submit your application?
+      </span>
+      <div class="banner-btn-group">
+        <button
+          type="button"
+          class="banner-primary-btn"
+          data-jobs-action="confirm-applied"
+          [disabled]="isCardBusy(prompt.id)"
+          (click)="confirmMarkApplied()"
+        >
+          Yes, Mark Applied
+        </button>
+        <button
+          type="button"
+          class="banner-action-btn"
+          data-jobs-action="dismiss-applied"
+          (click)="dismissAppliedPrompt()"
+        >
+          Not yet
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (interactionNotice()) {
+    <div class="feedback-banner" role="status" data-jobs-feedback>
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <span class="banner-text">{{ interactionNotice() }}</span>
+      <button type="button" class="banner-action-btn" (click)="interactionNotice.set('')">
+        Close
+      </button>
+    </div>
+  }
+
+  @if (isSearching() && !searchResult()) {
+    <section class="loading-results-card" role="status" data-jobs-loading>
+      <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+      <div>
+        <strong>Loading European job listings...</strong>
+        <p>Fetching verified sponsor employers, salaries, and personalized match scores.</p>
+      </div>
+    </section>
+  } @else if (jobs().length === 0 && !searchErrorMessage()) {
+    <section class="empty-results-card" data-jobs-empty>
+      <span class="material-symbols-outlined empty-icon" aria-hidden="true">
+        {{ activeFilterCount() > 0 ? 'filter_alt_off' : 'travel_explore' }}
+      </span>
+      <h3>
+        {{
+          activeFilterCount() > 0
+            ? 'No active roles match your current filters'
+            : 'No active jobs indexed yet'
+        }}
+      </h3>
+      <p>
+        {{
+          activeFilterCount() > 0
+            ? 'Try widening your country, work mode, sponsorship status, or match score threshold.'
+            : 'Live jobs appear here automatically once Arbeitnow & Adzuna ingestion runs, or configure your target countries in Settings.'
+        }}
+      </p>
+      @if (activeFilterCount() > 0) {
+        <button
+          type="button"
+          class="toolbar-btn"
+          data-jobs-action="reset-empty"
+          (click)="onResetFilters()"
+        >
+          Clear all filters
+        </button>
+      } @else {
+        <a routerLink="/settings" class="toolbar-btn primary-link">Review Search Preferences</a>
+      }
+    </section>
+  } @else if (jobs().length > 0) {
+    <div class="discovery-layout" [class.is-refreshing]="isSearching()">
+      <div class="results-column">
+        @for (item of jobs(); track item.id) {
+          <app-job-card
+            [job]="item"
+            [selected]="selectedSummaryJob()?.id === item.id"
+            [compact]="compactCards()"
+            [busy]="isCardBusy(item.id)"
+            (inspectRequested)="onInspectJob($event)"
+            (saveToggle)="onSaveToggle($event)"
+            (interestedToggle)="onInterestedToggle($event)"
+            (hideRequested)="onHideRequested($event)"
+            (unhideRequested)="onUnhideRequested($event)"
+            (applyRequested)="onApplyRequested($event)"
+          />
+        }
+
+        @if (searchResult(); as pageMeta) {
+          <nav class="pagination-bar" aria-label="Job search results pagination" data-jobs-pagination>
+            <span class="pagination-summary">{{ showingRangeText() }}</span>
+
+            <div class="pagination-controls">
+              <label class="page-size-field">
+                <span>Per page</span>
+                <select
+                  class="page-size-select"
+                  data-jobs-page-size
+                  [value]="pageSize()"
+                  [disabled]="isSearching()"
+                  (change)="onPageSizeChange($event)"
+                >
+                  <option [value]="10">10</option>
+                  <option [value]="20">20</option>
+                  <option [value]="50">50</option>
+                </select>
+              </label>
+
+              @if (pageMeta.totalPages > 1) {
+                <div class="page-buttons">
+                  <button
+                    type="button"
+                    class="page-btn"
+                    data-jobs-page="prev"
+                    [disabled]="!pageMeta.hasPrevious || isSearching()"
+                    (click)="onPageChange(pageMeta.pageNumber - 1)"
+                  >
+                    Previous
+                  </button>
+
+                  @for (p of visiblePageNumbers(); track p) {
+                    <button
+                      type="button"
+                      class="page-btn"
+                      [class.is-current]="p === pageMeta.pageNumber"
+                      [attr.aria-current]="p === pageMeta.pageNumber ? 'page' : null"
+                      [attr.data-jobs-page-num]="p"
+                      [disabled]="isSearching()"
+                      (click)="onPageChange(p)"
+                    >
+                      {{ p + 1 }}
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    class="page-btn"
+                    data-jobs-page="next"
+                    [disabled]="!pageMeta.hasNext || isSearching()"
+                    (click)="onPageChange(pageMeta.pageNumber + 1)"
+                  >
+                    Next
+                  </button>
+                </div>
+              }
+            </div>
+          </nav>
+        }
+      </div>
+
+      @if (selectedSummaryJob(); as activeSummary) {
+        <app-job-detail-inspector
+          [summaryJob]="activeSummary"
+          [detail]="selectedJobDetail()?.id === activeSummary.id ? selectedJobDetail() : null"
+          [loading]="isLoadingDetail()"
+          [errorMessage]="detailErrorMessage()"
+          [actionBusy]="isCardBusy(activeSummary.id)"
+          [matchBusy]="isMatchBusy(activeSummary.id)"
+          [aiMatchBusy]="isAiMatchBusy(activeSummary.id)"
+          [aiAnalysisBusy]="isAiAnalysisBusy(activeSummary.id)"
+          [aiAnalysisHistory]="aiAnalysisHistory()"
+          [aiHistoryLoading]="aiHistoryLoading()"
+          [aiHistoryOpen]="aiHistoryOpen()"
+          (retryDetail)="retrySelectedDetail()"
+          (saveToggle)="onSaveToggle(activeSummary)"
+          (interestedToggle)="onInterestedToggle(activeSummary)"
+          (hideToggle)="onInspectorHideToggle()"
+          (applyRequested)="onApplyRequested(activeSummary)"
+          (calculateMatchRequested)="onCalculateSelectedJobMatch()"
+          (evaluateAiMatchRequested)="onEvaluateSelectedJobAiMatch()"
+          (analyzeJdRequested)="onAnalyzeSelectedJobJd()"
+          (toggleAiHistoryRequested)="onToggleAiHistory()"
+        />
+      }
+    </div>
+  }
+
+  <app-confirm-dialog
+    [open]="pendingHideJob() !== null"
+    title="Hide this role from your feed?"
+    [message]="hideDialogMessage()"
+    confirmLabel="Hide Job"
+    cancelLabel="Keep Visible"
+    tone="danger"
+    icon="visibility_off"
+    [busy]="hideDialogBusy()"
+    (confirmed)="confirmHideJob()"
+    (cancelled)="cancelHideJob()"
+  />
+</div>

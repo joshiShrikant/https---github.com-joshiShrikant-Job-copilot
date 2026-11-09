@@ -1,0 +1,234 @@
+<div class="section-stack">
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="status-banner success" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>Education</h2>
+        <p>Degrees and academic credentials relevant to EU Blue Card eligibility verification.</p>
+      </div>
+
+      @if (!isFormOpen()) {
+        <button type="button" class="btn-primary" (click)="openCreateForm()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Add Education
+        </button>
+      }
+    </div>
+
+    @if (isFormOpen()) {
+      <form class="editor-panel" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="form-grid">
+          <div class="field-group">
+            <label class="field-label" for="edu-institution">
+              Institution <span class="required-mark">*</span>
+            </label>
+            <input
+              id="edu-institution"
+              type="text"
+              class="field-input"
+              [class.is-invalid]="
+                form.controls.institution.invalid && form.controls.institution.touched
+              "
+              formControlName="institution"
+              placeholder="e.g. Technical University of Munich"
+            />
+            @if (form.controls.institution.invalid && form.controls.institution.touched) {
+              <span class="field-error">Institution name is required.</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="edu-degree">
+              Degree <span class="required-mark">*</span>
+            </label>
+            <input
+              id="edu-degree"
+              type="text"
+              class="field-input"
+              [class.is-invalid]="form.controls.degree.invalid && form.controls.degree.touched"
+              formControlName="degree"
+              placeholder="e.g. M.Sc., B.Tech."
+            />
+            @if (form.controls.degree.invalid && form.controls.degree.touched) {
+              <span class="field-error">Degree is required.</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="edu-field">
+              Field of study <span class="required-mark">*</span>
+            </label>
+            <input
+              id="edu-field"
+              type="text"
+              class="field-input"
+              [class.is-invalid]="
+                form.controls.fieldOfStudy.invalid && form.controls.fieldOfStudy.touched
+              "
+              formControlName="fieldOfStudy"
+              placeholder="e.g. Computer Science"
+            />
+            @if (form.controls.fieldOfStudy.invalid && form.controls.fieldOfStudy.touched) {
+              <span class="field-error">Field of study is required.</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="edu-country">
+              Country <span class="required-mark">*</span>
+            </label>
+            <input
+              id="edu-country"
+              type="text"
+              class="field-input"
+              [class.is-invalid]="form.controls.country.invalid && form.controls.country.touched"
+              formControlName="country"
+              placeholder="e.g. Germany"
+            />
+            @if (form.controls.country.invalid && form.controls.country.touched) {
+              <span class="field-error">Country is required.</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="edu-start-date">
+              Start date <span class="required-mark">*</span>
+            </label>
+            <input
+              id="edu-start-date"
+              type="date"
+              [max]="todayDate"
+              class="field-input"
+              [class.is-invalid]="form.controls.startDate.invalid && form.controls.startDate.touched"
+              formControlName="startDate"
+            />
+            @if (form.controls.startDate.invalid && form.controls.startDate.touched) {
+              <span class="field-error">
+                @if (form.controls.startDate.errors?.['futureDate']) {
+                  Start date cannot be in the future.
+                } @else {
+                  Start date is required.
+                }
+              </span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="edu-end-date">End / graduation date</label>
+            <input
+              id="edu-end-date"
+              type="date"
+              class="field-input"
+              [class.is-invalid]="form.errors?.['dateRangeInvalid']"
+              formControlName="endDate"
+            />
+            @if (form.errors?.['dateRangeInvalid']) {
+              <span class="field-error">End date cannot precede the start date.</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="edu-gpa">Grade or GPA</label>
+            <input
+              id="edu-gpa"
+              type="text"
+              class="field-input"
+              formControlName="gradeOrGpa"
+              placeholder="e.g. 1.3 or 8.9 / 10"
+            />
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            <span class="material-symbols-outlined" aria-hidden="true">check</span>
+            @if (isSubmitting()) {
+              Saving...
+            } @else if (editingId() !== null) {
+              Update Education
+            } @else {
+              Save Education
+            }
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (educations().length === 0) {
+      <div class="empty-state">
+        <span class="material-symbols-outlined" aria-hidden="true">school</span>
+        <h3>No education entries added yet</h3>
+        <p>
+          Documenting accredited degrees improves EU Blue Card guidance accuracy across Germany and
+          EU member states.
+        </p>
+      </div>
+    } @else {
+      <div class="timeline-list">
+        @for (item of educations(); track item.id) {
+          <article class="timeline-card">
+            <div class="timeline-head">
+              <div>
+                <h3>{{ item.degree }} in {{ item.fieldOfStudy }}</h3>
+                <p class="org-subtitle">
+                  <strong>{{ item.institution }}</strong>
+                  <span>· {{ item.country }}</span>
+                  <span>· {{ formatDateRange(item) }}</span>
+                  @if (item.gradeOrGpa) {
+                    <span>· Grade: {{ item.gradeOrGpa }}</span>
+                  }
+                </p>
+              </div>
+
+              <div class="item-actions">
+                @if (confirmDeleteId() === item.id) {
+                  <button
+                    type="button"
+                    class="btn-danger-ghost"
+                    [disabled]="deletingId() === item.id"
+                    (click)="confirmDelete(item)"
+                  >
+                    Confirm Delete
+                  </button>
+                  <button type="button" class="btn-icon" (click)="cancelDelete()">Cancel</button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    [attr.aria-label]="'Edit education at ' + item.institution"
+                    (click)="openEditForm(item)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-danger-ghost"
+                    [attr.aria-label]="'Delete education at ' + item.institution"
+                    (click)="requestDelete(item.id)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>
+

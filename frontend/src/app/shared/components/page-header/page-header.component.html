@@ -1,0 +1,26 @@
+<div class="page-header">
+  <div class="header-main">
+    @if (icon()) {
+      <span class="header-icon-box" aria-hidden="true">
+        <span class="material-symbols-outlined">{{ icon() }}</span>
+      </span>
+    }
+
+    <div class="header-copy">
+      <div class="title-row">
+        <h1 class="page-title">{{ title() }}</h1>
+        @if (badge()) {
+          <span class="header-badge">{{ badge() }}</span>
+        }
+      </div>
+      @if (subtitle()) {
+        <p class="page-subtitle">{{ subtitle() }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <ng-content select="[page-actions]" />
+  </div>
+</div>
+

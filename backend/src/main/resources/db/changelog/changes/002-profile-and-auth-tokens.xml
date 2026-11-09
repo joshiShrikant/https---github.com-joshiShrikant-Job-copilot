@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-create-password-reset-tokens-table" author="eurojob-architect">
+        <comment>Create password_reset_tokens table for account recovery</comment>
+        <createTable tableName="password_reset_tokens">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_password_reset_tokens" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_hash" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_pwd_reset_token"/>
+            </column>
+            <column name="expires_at" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="used" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="password_reset_tokens"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_pwd_reset_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="password_reset_tokens" indexName="idx_pwd_reset_lookup">
+            <column name="token_hash"/>
+            <column name="used"/>
+            <column name="expires_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="password_reset_tokens"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="004-create-user-profiles-table" author="eurojob-architect">
+        <comment>Create user_profiles table (1-to-1 with users)</comment>
+        <createTable tableName="user_profiles">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_profiles" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_user_profiles_user"/>
+            </column>
+            <column name="current_designation" type="VARCHAR(150)"/>
+            <column name="years_of_experience" type="DECIMAL(4,1)" defaultValueNumeric="0.0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_country" type="VARCHAR(100)"/>
+            <column name="current_city" type="VARCHAR(100)"/>
+            <column name="expected_salary_min" type="DECIMAL(12,2)"/>
+            <column name="expected_salary_currency" type="VARCHAR(3)" defaultValue="EUR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="notice_period_days" type="INT" defaultValueNumeric="30">
+                <constraints nullable="false"/>
+            </column>
+            <column name="work_authorization_status" type="VARCHAR(50)" defaultValue="NEEDS_SPONSORSHIP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="relocation_preference" type="VARCHAR(50)" defaultValue="WILLING_TO_RELOCATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="linkedin_url" type="VARCHAR(255)"/>
+            <column name="github_url" type="VARCHAR(255)"/>
+            <column name="portfolio_url" type="VARCHAR(255)"/>
+            <column name="bio" type="TEXT"/>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_profiles"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_profiles_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <rollback>
+            <dropTable tableName="user_profiles"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="005-create-user-skills-table" author="eurojob-architect">
+        <comment>Create normalized user_skills table</comment>
+        <createTable tableName="user_skills">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_skills" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="skill_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="normalized_skill" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="years_experience" type="DECIMAL(4,1)" defaultValueNumeric="1.0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="proficiency_level" type="VARCHAR(30)" defaultValue="INTERMEDIATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_primary" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_skills"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_skills_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addUniqueConstraint tableName="user_skills"
+                             columnNames="user_id, normalized_skill"
+                             constraintName="uk_user_skills_user_skill"/>
+
+        <createIndex tableName="user_skills" indexName="idx_user_skills_lookup">
+            <column name="normalized_skill"/>
+            <column name="proficiency_level"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="user_skills"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="006-create-user-educations-table" author="eurojob-architect">
+        <comment>Create user_educations table</comment>
+        <createTable tableName="user_educations">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_educations" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="institution" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="degree" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="field_of_study" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="DATE"/>
+            <column name="grade_or_gpa" type="VARCHAR(50)"/>
+            <column name="country" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_educations"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_educations_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="user_educations" indexName="idx_user_educations_user">
+            <column name="user_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="user_educations"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="007-create-user-work-experiences-table" author="eurojob-architect">
+        <comment>Create user_work_experiences table</comment>
+        <createTable tableName="user_work_experiences">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_work_experiences" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_name" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="designation" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location" type="VARCHAR(150)"/>
+            <column name="start_date" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="DATE"/>
+            <column name="is_current" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT"/>
+            <column name="skills_used" type="JSON"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_work_experiences"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_experiences_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="user_work_experiences" indexName="idx_user_experiences_user">
+            <column name="user_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="user_work_experiences"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="008-create-user-job-preferences-table" author="eurojob-architect">
+        <comment>Create user_job_preferences table (1-to-1 with users)</comment>
+        <createTable tableName="user_job_preferences">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_user_job_preferences" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_user_preferences_user"/>
+            </column>
+            <column name="preferred_job_titles" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preferred_countries" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preferred_cities" type="JSON"/>
+            <column name="min_salary" type="DECIMAL(12,2)"/>
+            <column name="salary_currency" type="VARCHAR(3)" defaultValue="EUR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requires_sponsorship" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="requires_relocation" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="work_arrangement" type="VARCHAR(30)" defaultValue="ANY">
+                <constraints nullable="false"/>
+            </column>
+            <column name="english_speaking_only" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_match_score" type="INT" defaultValueNumeric="60">
+                <constraints nullable="false"/>
+            </column>
+            <column name="autopilot_enabled" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_job_preferences"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_user_preferences_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <rollback>
+            <dropTable tableName="user_job_preferences"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

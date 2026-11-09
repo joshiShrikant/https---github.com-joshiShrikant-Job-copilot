@@ -1,0 +1,163 @@
+@let item = job();
+<article
+  class="job-card"
+  [class.is-selected]="selected()"
+  [class.is-compact]="compact()"
+  [attr.data-job-id]="item.id"
+>
+  <div class="card-top">
+    <div class="identity-block">
+      <div class="company-avatar" aria-hidden="true">{{ companyMonogram() }}</div>
+      <div class="title-block">
+        <div class="meta-top">
+          <span class="company-name">{{ item.companyName }}</span>
+          <span class="dot-sep" aria-hidden="true">·</span>
+          <span class="location-text">{{ formattedLocation() }}</span>
+          <span class="dot-sep" aria-hidden="true">·</span>
+          <span class="posted-time">{{ item.postedAt | timeAgo }}</span>
+        </div>
+
+        <button
+          type="button"
+          class="job-title-btn"
+          data-card-action="title-inspect"
+          (click)="onInspect()"
+        >
+          {{ item.title }}
+        </button>
+      </div>
+    </div>
+
+    @if (showMatchGauge()) {
+      <app-match-score-gauge
+        [score]="item.matchPercentage"
+        [size]="compact() ? 'sm' : 'md'"
+        label="Role match"
+      />
+    }
+  </div>
+
+  <div class="badges-row">
+    <app-status-badge [sponsorStatus]="item.sponsorStatus" />
+    <app-status-badge [workArrangement]="item.workArrangement" />
+
+    @if (employmentSummary()) {
+      <span class="meta-chip">{{ employmentSummary() }}</span>
+    }
+
+    <span class="meta-chip salary-chip" [class.is-disclosed]="hasSalaryRange()">
+      <span class="material-symbols-outlined" aria-hidden="true">payments</span>
+      <span>
+        {{ item.salaryMin | salaryRange:item.salaryMax:item.salaryCurrency:item.salaryPeriod }}
+      </span>
+    </span>
+
+    @if (item.isHidden) {
+      <span class="meta-chip hidden-badge">
+        <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+        <span>Hidden</span>
+      </span>
+    }
+
+    @if (item.sourceProvider) {
+      <span class="source-chip">{{ item.sourceProvider }}</span>
+    }
+  </div>
+
+  @if (!compact() && item.descriptionSnippet) {
+    <p class="snippet-text">{{ item.descriptionSnippet }}</p>
+  }
+
+  @if (visibleSkills().length > 0) {
+    <div class="skills-row" aria-label="Key skills">
+      @for (skill of visibleSkills(); track $index) {
+        <span class="skill-pill">{{ skill }}</span>
+      }
+      @if (hiddenSkillsCount() > 0) {
+        <span class="skill-pill overflow-pill">+{{ hiddenSkillsCount() }} more</span>
+      }
+    </div>
+  }
+
+  <footer class="card-actions">
+    <div class="quick-actions">
+      <button
+        type="button"
+        class="action-toggle-btn"
+        [class.is-active]="item.isSaved"
+        [attr.aria-pressed]="item.isSaved"
+        [disabled]="busy()"
+        data-card-action="save"
+        (click)="onSaveToggle()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">
+          {{ item.isSaved ? 'bookmark_added' : 'bookmark_border' }}
+        </span>
+        <span>{{ item.isSaved ? 'Saved' : 'Save' }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="action-toggle-btn"
+        [class.is-active]="item.isInterested"
+        [attr.aria-pressed]="item.isInterested"
+        [disabled]="busy()"
+        data-card-action="interested"
+        (click)="onInterestedToggle()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">thumb_up</span>
+        <span>{{ item.isInterested ? 'Interested' : 'Mark fit' }}</span>
+      </button>
+
+      @if (item.isHidden) {
+        <button
+          type="button"
+          class="action-toggle-btn is-active"
+          title="Restore this role to your default feed"
+          aria-label="Unhide job"
+          [disabled]="busy()"
+          data-card-action="unhide"
+          (click)="onUnhideRequested()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">visibility</span>
+          <span>Unhide</span>
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="action-toggle-btn hide-btn"
+          title="Hide this role from feed"
+          aria-label="Hide job"
+          [disabled]="busy()"
+          data-card-action="hide"
+          (click)="onHideRequested()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+          <span>Hide</span>
+        </button>
+      }
+    </div>
+
+    <div class="primary-actions">
+      <button
+        type="button"
+        class="btn-details"
+        data-card-action="inspect"
+        (click)="onInspect()"
+      >
+        <span>Details</span>
+      </button>
+      <button
+        type="button"
+        class="btn-apply"
+        [disabled]="busy()"
+        data-card-action="apply"
+        (click)="onApplyRequested()"
+      >
+        <span>Apply</span>
+        <span class="material-symbols-outlined" aria-hidden="true">open_in_new</span>
+      </button>
+    </div>
+  </footer>
+</article>
+

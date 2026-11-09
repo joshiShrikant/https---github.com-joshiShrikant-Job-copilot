@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="023-create-interview-prep-sessions-table" author="eurojob-architect">
+        <comment>Create interview_prep_sessions table</comment>
+        <createTable tableName="interview_prep_sessions">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_interview_prep_sessions" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="session_title" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="overall_feedback" type="TEXT"/>
+            <column name="score" type="DECIMAL(5,2)"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="interview_prep_sessions"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_interview_sessions_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="interview_prep_sessions"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_interview_sessions_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="interview_prep_sessions" indexName="idx_interview_sessions_user">
+            <column name="user_id"/>
+            <column name="job_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="interview_prep_sessions"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="024-create-interview-questions-table" author="eurojob-architect">
+        <comment>Create interview_questions table</comment>
+        <createTable tableName="interview_questions">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_interview_questions" nullable="false"/>
+            </column>
+            <column name="session_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="category" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="difficulty" type="VARCHAR(30)" defaultValue="MID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="question_text" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ideal_answer" type="TEXT"/>
+            <column name="user_answer" type="TEXT"/>
+            <column name="ai_feedback" type="TEXT"/>
+            <column name="score" type="DECIMAL(5,2)"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="interview_questions"
+                                 baseColumnNames="session_id"
+                                 constraintName="fk_interview_questions_session"
+                                 referencedTableName="interview_prep_sessions"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="interview_questions" indexName="idx_interview_questions_session">
+            <column name="session_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="interview_questions"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="025-create-notifications-table" author="eurojob-architect">
+        <comment>Create notifications queue table</comment>
+        <createTable tableName="notifications">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_notifications" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference_type" type="VARCHAR(50)"/>
+            <column name="reference_id" type="BIGINT UNSIGNED"/>
+            <column name="is_read" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="read_at" type="DATETIME"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="notifications"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_notifications_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="notifications" indexName="idx_notifications_user">
+            <column name="user_id"/>
+            <column name="is_read"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="notifications"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

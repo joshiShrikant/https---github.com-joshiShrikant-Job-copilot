@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="029-add-semantic-ai-matching-fields" author="eurojob-architect">
+        <comment>Add dedicated AI semantic comparison breakdown columns to job_match_scores keeping AI reasoning separate from deterministic scores</comment>
+        <addColumn tableName="job_match_scores">
+            <column name="ai_strong_matches" type="JSON"/>
+            <column name="ai_missing_skills" type="JSON"/>
+            <column name="ai_experience_gaps" type="JSON"/>
+            <column name="ai_potential_concerns" type="JSON"/>
+            <column name="ai_improvement_suggestions" type="JSON"/>
+            <column name="ai_provider" type="VARCHAR(50)"/>
+            <column name="ai_model_used" type="VARCHAR(100)"/>
+            <column name="ai_evaluated_at" type="DATETIME"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="job_match_scores" columnName="ai_evaluated_at"/>
+            <dropColumn tableName="job_match_scores" columnName="ai_model_used"/>
+            <dropColumn tableName="job_match_scores" columnName="ai_provider"/>
+            <dropColumn tableName="job_match_scores" columnName="ai_improvement_suggestions"/>
+            <dropColumn tableName="job_match_scores" columnName="ai_potential_concerns"/>
+            <dropColumn tableName="job_match_scores" columnName="ai_experience_gaps"/>
+            <dropColumn tableName="job_match_scores" columnName="ai_missing_skills"/>
+            <dropColumn tableName="job_match_scores" columnName="ai_strong_matches"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

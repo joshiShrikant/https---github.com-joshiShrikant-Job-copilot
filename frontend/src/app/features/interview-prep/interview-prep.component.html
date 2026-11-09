@@ -1,0 +1,521 @@
+<div class="prep-page">
+  <app-page-header
+    title="AI Interview Preparation &amp; Practice Lab"
+    subtitle="Generate role-grounded European interview sessions, practice STAR and technical responses, submit answers for AI grading, and track score progression."
+    icon="psychology"
+    [badge]="headerBadge()"
+  >
+    <div page-actions class="header-actions">
+      <a class="toolbar-btn" routerLink="/jobs">
+        <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+        Discover Jobs
+      </a>
+      <button
+        type="button"
+        class="toolbar-btn"
+        data-prep-refresh
+        [disabled]="loadingWorkspace()"
+        (click)="loadWorkspace()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        Refresh
+      </button>
+    </div>
+  </app-page-header>
+
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert" data-prep-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (noticeMessage()) {
+    <div class="status-banner success" role="status" data-prep-notice>
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ noticeMessage() }}</span>
+    </div>
+  }
+
+  <!-- Top Builder & Saved Sessions Grid -->
+  <div class="top-grid">
+    <section class="surface-card builder-card" data-prep-builder>
+      <div class="card-head">
+        <div>
+          <h2>Generate Interview Session</h2>
+          <p>Grounded strictly in your profile and the target role’s captured job description.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <label class="field-group field-full">
+          <span>Target Job</span>
+          <select
+            class="field-control"
+            data-prep-job-select
+            [ngModel]="selectedJobId()"
+            (ngModelChange)="selectedJobId.set($event ? +$event : null)"
+          >
+            @if (availableJobs().length === 0) {
+              <option [ngValue]="null">No active jobs indexed yet</option>
+            }
+            @for (job of availableJobs(); track job.id) {
+              <option [ngValue]="job.id">
+                {{ job.title }} — {{ job.companyName }} ({{ job.country }})
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field-group">
+          <span>Session Title (optional)</span>
+          <input
+            type="text"
+            class="field-control"
+            data-prep-title-input
+            placeholder="e.g. Adyen Principal Java Round 1"
+            [ngModel]="sessionTitle()"
+            (ngModelChange)="sessionTitle.set($event)"
+          />
+        </label>
+
+        <label class="field-group">
+          <span>Difficulty Tier</span>
+          <select
+            class="field-control"
+            data-prep-difficulty-select
+            [ngModel]="difficulty()"
+            (ngModelChange)="difficulty.set($event)"
+          >
+            @for (opt of difficultyOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field-group">
+          <span>Question Count (3–12)</span>
+          <input
+            type="number"
+            min="3"
+            max="12"
+            class="field-control"
+            data-prep-count-input
+            [ngModel]="questionCount()"
+            (ngModelChange)="onQuestionCountChange($event)"
+          />
+        </label>
+
+        <label class="field-group">
+          <span>Focus Notes (optional)</span>
+          <input
+            type="text"
+            class="field-control"
+            data-prep-notes-input
+            placeholder="e.g. Emphasize RxJS signals, SEPA idempotency, relocation motivation"
+            [ngModel]="focusNotes()"
+            (ngModelChange)="focusNotes.set($event)"
+          />
+        </label>
+      </div>
+
+      <div class="categories-block">
+        <span class="block-label">Technical &amp; Behavioral Focus Categories</span>
+        <div class="chip-grid">
+          @for (cat of categoryOptions; track cat.value) {
+            <button
+              type="button"
+              class="category-chip"
+              [class.is-selected]="hasCategory(cat.value)"
+              [attr.data-prep-cat]="cat.value"
+              [attr.aria-pressed]="hasCategory(cat.value)"
+              (click)="toggleCategory(cat.value)"
+            >
+              {{ cat.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="builder-footer">
+        <button
+          type="button"
+          class="primary-btn"
+          data-prep-generate-btn
+          [disabled]="creatingSession() || !selectedJobId()"
+          (click)="createSession()"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+          {{ creatingSession() ? 'Generating Questions...' : 'Generate AI Interview Session' }}
+        </button>
+      </div>
+    </section>
+
+    <section class="surface-card sessions-card" data-prep-sessions>
+      <div class="card-head">
+        <div>
+          <h2>Saved Practice Sessions ({{ sessions().length }})</h2>
+          <p>Resume a session or review past AI answer feedback.</p>
+        </div>
+      </div>
+
+      @if (loadingWorkspace() && sessions().length === 0) {
+        <p class="muted-note">Loading interview preparation sessions...</p>
+      } @else if (sessions().length === 0) {
+        <p class="muted-note" data-prep-no-sessions>
+          No interview prep sessions yet. Select a European role on the left to create your first session.
+        </p>
+      } @else {
+        <div class="sessions-list">
+          @for (item of sessions(); track item.id) {
+            <article
+              class="session-row"
+              [class.is-active]="activeSession()?.id === item.id"
+              [attr.data-prep-session-card]="item.id"
+            >
+              <div class="session-main" (click)="openSession(item.id)">
+                <strong>{{ item.sessionTitle }}</strong>
+                <span class="session-sub">
+                  {{ item.jobTitle }} · {{ item.companyName }}
+                </span>
+                <div class="session-meta">
+                  <span class="meta-pill">{{ item.targetDifficulty }}</span>
+                  <span class="meta-pill">
+                    {{ item.answeredQuestions }}/{{ item.totalQuestions }} answered
+                  </span>
+                  @if (item.score !== null) {
+                    <span class="score-pill" [class]="scoreBadgeClass(item.score)">
+                      {{ item.score }}/100
+                    </span>
+                  }
+                  <span class="time-note">{{ item.createdAt | timeAgo }}</span>
+                </div>
+              </div>
+
+              <div class="session-btns">
+                <button
+                  type="button"
+                  class="toolbar-btn"
+                  [attr.data-prep-open-session]="item.id"
+                  (click)="openSession(item.id)"
+                >
+                  Open
+                </button>
+                <button
+                  type="button"
+                  class="danger-btn"
+                  aria-label="Delete session"
+                  [attr.data-prep-delete-session]="item.id"
+                  [disabled]="deletingSessionId() === item.id"
+                  (click)="requestDeleteSession(item)"
+                >
+                  Delete
+                </button>
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <!-- Active Session Practice Workspace -->
+  @if (loadingSession()) {
+    <section class="surface-card" data-prep-session-loading>
+      Loading selected interview preparation session...
+    </section>
+  } @else if (activeSession(); as session) {
+    <section class="surface-card workspace-card" data-prep-workspace>
+      <div class="workspace-head">
+        <div>
+          <span class="kicker-tag">Active Interview Session</span>
+          <h2>{{ session.sessionTitle }}</h2>
+          <p class="role-subtitle">
+            {{ session.jobTitle }} · {{ session.companyName }}
+            @if (session.country) {
+              ({{ session.country }})
+            }
+          </p>
+        </div>
+
+        <div class="workspace-stats">
+          <div class="stat-pill">
+            <span>Progress</span>
+            <strong>{{ session.answeredQuestions }} / {{ session.totalQuestions }} answered</strong>
+          </div>
+          <div class="stat-pill">
+            <span>Overall Score</span>
+            <strong data-prep-session-score>
+              {{ session.score !== null ? session.score + ' / 100' : 'Pending answers' }}
+            </strong>
+          </div>
+          @if (session.aiProvider) {
+            <div class="stat-pill">
+              <span>AI Evaluator</span>
+              <strong>{{ session.aiProvider }} · {{ session.aiModelUsed }}</strong>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (session.overallFeedback) {
+        <div class="feedback-callout" data-prep-overall-feedback>
+          <strong>Overall Coaching Summary:</strong> {{ session.overallFeedback }}
+        </div>
+      }
+
+      @if (session.companyPrepTopics.length > 0) {
+        <div class="topics-section" data-prep-company-topics>
+          <h3>Grounded Company &amp; Role Focus Topics</h3>
+          <p class="grounding-disclaimer">
+            Every preparation topic below displays its explicit data source (`groundingBasis`) from stored postings and sponsor/company records—never unverified claims.
+          </p>
+          <div class="topics-grid">
+            @for (topic of session.companyPrepTopics; track topic.topic) {
+              <article class="topic-card">
+                <strong>{{ topic.topic }}</strong>
+                <p>{{ topic.whyRelevant }}</p>
+                <span class="grounding-badge" data-prep-grounding>
+                  Grounding: {{ topic.groundingBasis }}
+                </span>
+              </article>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="questions-list">
+        @for (q of session.questions; track q.id) {
+          <article class="question-card" [attr.data-prep-question]="q.id">
+            <div class="question-head">
+              <div class="question-tags">
+                <span class="meta-pill">Q{{ q.orderIndex + 1 }}</span>
+                <span class="meta-pill is-brand">{{ formatCategory(q.category) }}</span>
+                <span class="meta-pill">{{ q.difficulty }}</span>
+                @for (tag of q.focusTags; track tag) {
+                  <span class="tag-chip">{{ tag }}</span>
+                }
+              </div>
+
+              @if (q.score !== null) {
+                <span
+                  class="score-pill"
+                  [class]="scoreBadgeClass(q.score)"
+                  [attr.data-prep-question-score]="q.id"
+                >
+                  Score: {{ q.score }}/100
+                </span>
+              }
+            </div>
+
+            <h3>{{ q.questionText }}</h3>
+
+            <label class="field-group">
+              <span>Your Practice Answer</span>
+              <textarea
+                rows="4"
+                class="field-control answer-textarea"
+                placeholder="Draft a structured answer covering architecture trade-offs, metrics, or STAR outcomes..."
+                [attr.data-prep-answer-input]="q.id"
+                [ngModel]="draftForQuestion(q.id)"
+                (ngModelChange)="onAnswerDraftInput(q.id, $event)"
+              ></textarea>
+            </label>
+
+            <div class="question-actions">
+              <button
+                type="button"
+                class="primary-btn"
+                [attr.data-prep-submit-answer]="q.id"
+                [disabled]="submittingQuestionId() === q.id"
+                (click)="submitAnswer(q)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">grading</span>
+                {{
+                  submittingQuestionId() === q.id
+                    ? 'Grading with AI...'
+                    : q.score !== null
+                      ? 'Re-submit &amp; Grade'
+                      : 'Submit &amp; Grade Answer'
+                }}
+              </button>
+
+              <button
+                type="button"
+                class="toolbar-btn"
+                [attr.data-prep-toggle-ideal]="q.id"
+                (click)="toggleIdealAnswer(q.id)"
+              >
+                <span class="material-symbols-outlined" aria-hidden="true">
+                  {{ expandedIdealIds().has(q.id) ? 'visibility_off' : 'lightbulb' }}
+                </span>
+                {{
+                  expandedIdealIds().has(q.id)
+                    ? 'Hide Ideal Benchmark'
+                    : 'Reveal Ideal Benchmark Answer'
+                }}
+              </button>
+            </div>
+
+            @if (q.aiFeedback || q.strongPoints.length > 0 || q.missingElements.length > 0) {
+              <div class="grading-panel" [attr.data-prep-feedback]="q.id">
+                @if (q.aiFeedback) {
+                  <p class="grade-summary">{{ q.aiFeedback }}</p>
+                }
+                <div class="grade-columns">
+                  @if (q.strongPoints.length > 0) {
+                    <div class="grade-list is-strong">
+                      <strong>Strong Points</strong>
+                      <ul>
+                        @for (pt of q.strongPoints; track pt) {
+                          <li>{{ pt }}</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                  @if (q.missingElements.length > 0) {
+                    <div class="grade-list is-missing">
+                      <strong>Missing Elements to Add</strong>
+                      <ul>
+                        @for (miss of q.missingElements; track miss) {
+                          <li>{{ miss }}</li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </div>
+                @if (q.answeredAt) {
+                  <span class="time-note">
+                    Evaluated {{ q.answeredAt | date: 'medium' }}
+                    @if (q.evaluationModelUsed) {
+                      · {{ q.evaluationProvider }} ({{ q.evaluationModelUsed }})
+                    }
+                  </span>
+                }
+              </div>
+            }
+
+            @if (expandedIdealIds().has(q.id)) {
+              <div class="ideal-panel" [attr.data-prep-ideal]="q.id">
+                <strong>Ideal Benchmark Answer</strong>
+                <p>{{ q.idealAnswer }}</p>
+              </div>
+            }
+          </article>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- Performance Analytics & Score History -->
+  @if (history(); as hist) {
+    <section class="surface-card history-card" data-prep-history>
+      <div class="card-head">
+        <div>
+          <h2>Interview Performance History &amp; Weakest Areas</h2>
+          <p>Aggregated accuracy across graded practice answers and recent sessions.</p>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="stat-pill">
+          <span>Total Sessions</span>
+          <strong>{{ hist.totalSessions }}</strong>
+        </div>
+        <div class="stat-pill">
+          <span>Questions Answered</span>
+          <strong>{{ hist.totalAnsweredQuestions }} / {{ hist.totalQuestions }}</strong>
+        </div>
+        <div class="stat-pill">
+          <span>Average Score</span>
+          <strong data-prep-history-avg>
+            {{ hist.averageScore !== null ? (hist.averageScore | number: '1.0-1') + ' / 100' : 'N/A' }}
+          </strong>
+        </div>
+        <div class="stat-pill">
+          <span>Weakest Categories</span>
+          <strong>
+            {{ hist.weakestCategories.length > 0 ? hist.weakestCategories.join(', ') : 'None flagged yet' }}
+          </strong>
+        </div>
+      </div>
+
+      <div class="history-split">
+        <div class="history-subpanel">
+          <h3>Category Performance</h3>
+          @if (hist.categoryStats.length === 0) {
+            <p class="muted-note">Answer graded questions to populate category benchmarks.</p>
+          } @else {
+            <div class="table-scroll">
+              <table class="perf-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Answered</th>
+                    <th>Avg Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (cat of hist.categoryStats; track cat.category) {
+                    <tr>
+                      <td>{{ formatCategory(cat.category) }}</td>
+                      <td>{{ cat.answeredQuestions }} / {{ cat.totalQuestions }}</td>
+                      <td>
+                        {{ cat.averageScore !== null ? (cat.averageScore | number: '1.0-1') + '%' : '—' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+
+        <div class="history-subpanel">
+          <h3>Recent Score Progression</h3>
+          @if (trendChartData().points.length === 0) {
+            <p class="muted-note">Submit graded answers across sessions to plot score trends.</p>
+          } @else {
+            <svg
+              viewBox="0 0 460 130"
+              class="trend-svg"
+              role="img"
+              aria-label="Recent interview session score trend chart"
+            >
+              <line x1="24" y1="112" x2="436" y2="112" class="chart-axis" />
+              <line x1="24" y1="65" x2="436" y2="65" class="chart-grid" />
+              @if (trendChartData().points.length > 1) {
+                <polyline [attr.points]="trendChartData().polyline" class="trend-line" />
+              }
+              @for (pt of trendChartData().points; track pt.sessionId) {
+                <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="4.5" class="trend-dot">
+                  <title>{{ pt.sessionTitle }}: {{ pt.score }}/100</title>
+                </circle>
+              }
+            </svg>
+          }
+
+          @if (hist.improvementRecommendations.length > 0) {
+            <ul class="recs-list">
+              @for (rec of hist.improvementRecommendations; track rec) {
+                <li>{{ rec }}</li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <app-confirm-dialog
+    [open]="pendingDeleteSession() !== null"
+    title="Delete interview prep session?"
+    [message]="deleteDialogMessage()"
+    confirmLabel="Delete Session"
+    tone="danger"
+    icon="delete_forever"
+    [busy]="deletingSessionId() !== null"
+    (confirmed)="confirmDeleteSession()"
+    (cancelled)="pendingDeleteSession.set(null)"
+  />
+</div>

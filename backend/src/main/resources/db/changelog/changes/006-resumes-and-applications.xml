@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="016-create-resumes-table" author="eurojob-architect">
+        <comment>Create master resumes table</comment>
+        <createTable tableName="resumes">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_resumes" nullable="false"/>
+            </column>
+            <column name="uuid" type="CHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_resumes_uuid"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="resume_type" type="VARCHAR(30)" defaultValue="MASTER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_path" type="VARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_size_bytes" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mime_type" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="storage_provider" type="VARCHAR(50)" defaultValue="LOCAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version_number" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_master_approved" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parsed_content_json" type="JSON"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="resumes"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_resumes_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="resumes" indexName="idx_resumes_user">
+            <column name="user_id"/>
+            <column name="resume_type"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="resumes"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="017-create-tailored-resumes-table" author="eurojob-architect">
+        <comment>Create tailored_resumes table linked to master resume and job</comment>
+        <createTable tableName="tailored_resumes">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_tailored_resumes" nullable="false"/>
+            </column>
+            <column name="uuid" type="CHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_tailored_resumes_uuid"/>
+            </column>
+            <column name="master_resume_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template_name" type="VARCHAR(50)" defaultValue="MODERN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="resume_data_json" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="match_score" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ats_keyword_coverage" type="DECIMAL(5,2)" defaultValueNumeric="0.00">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pdf_file_path" type="VARCHAR(500)"/>
+            <column name="docx_file_path" type="VARCHAR(500)"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="tailored_resumes"
+                                 baseColumnNames="master_resume_id"
+                                 constraintName="fk_tailored_resumes_master"
+                                 referencedTableName="resumes"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+
+        <addForeignKeyConstraint baseTableName="tailored_resumes"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_tailored_resumes_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="tailored_resumes"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_tailored_resumes_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="tailored_resumes" indexName="idx_tailored_resumes_lookup">
+            <column name="user_id"/>
+            <column name="job_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="tailored_resumes"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="018-create-cover-letters-table" author="eurojob-architect">
+        <comment>Create cover_letters table for AI-generated job-specific cover letters</comment>
+        <createTable tableName="cover_letters">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_cover_letters" nullable="false"/>
+            </column>
+            <column name="uuid" type="CHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_cover_letters_uuid"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tailored_resume_id" type="BIGINT UNSIGNED"/>
+            <column name="title" type="VARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tone" type="VARCHAR(50)" defaultValue="PROFESSIONAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version_number" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="cover_letters"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_cover_letters_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="cover_letters"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_cover_letters_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="cover_letters"
+                                 baseColumnNames="tailored_resume_id"
+                                 constraintName="fk_cover_letters_tailored_resume"
+                                 referencedTableName="tailored_resumes"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="cover_letters" indexName="idx_cover_letters_lookup">
+            <column name="user_id"/>
+            <column name="job_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="cover_letters"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="019-create-job-applications-table" author="eurojob-architect">
+        <comment>Create job_applications table for Kanban application tracking</comment>
+        <createTable tableName="job_applications">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_job_applications" nullable="false"/>
+            </column>
+            <column name="uuid" type="CHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_applications_uuid"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(40)" defaultValue="INTERESTED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="applied_date" type="DATETIME"/>
+            <column name="tailored_resume_id" type="BIGINT UNSIGNED"/>
+            <column name="cover_letter_id" type="BIGINT UNSIGNED"/>
+            <column name="current_salary_offered" type="DECIMAL(12,2)"/>
+            <column name="offered_currency" type="VARCHAR(3)"/>
+            <column name="next_follow_up_date" type="DATE"/>
+            <column name="next_interview_date" type="DATETIME"/>
+            <column name="notes" type="TEXT"/>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="job_applications"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_applications_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="job_applications"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_applications_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+
+        <addForeignKeyConstraint baseTableName="job_applications"
+                                 baseColumnNames="tailored_resume_id"
+                                 constraintName="fk_applications_tailored_resume"
+                                 referencedTableName="tailored_resumes"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <addForeignKeyConstraint baseTableName="job_applications"
+                                 baseColumnNames="cover_letter_id"
+                                 constraintName="fk_applications_cover_letter"
+                                 referencedTableName="cover_letters"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <addUniqueConstraint tableName="job_applications"
+                             columnNames="user_id, job_id"
+                             constraintName="uk_applications_user_job"/>
+
+        <createIndex tableName="job_applications" indexName="idx_applications_status">
+            <column name="user_id"/>
+            <column name="status"/>
+        </createIndex>
+
+        <createIndex tableName="job_applications" indexName="idx_applications_follow_up">
+            <column name="user_id"/>
+            <column name="next_follow_up_date"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="job_applications"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="020-create-application-status-history-table" author="eurojob-architect">
+        <comment>Create application_status_history audit trail table</comment>
+        <createTable tableName="application_status_history">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_application_status_history" nullable="false"/>
+            </column>
+            <column name="application_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="previous_status" type="VARCHAR(40)"/>
+            <column name="new_status" type="VARCHAR(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="transition_notes" type="TEXT"/>
+            <column name="transitioned_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="application_status_history"
+                                 baseColumnNames="application_id"
+                                 constraintName="fk_status_history_application"
+                                 referencedTableName="job_applications"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <createIndex tableName="application_status_history" indexName="idx_status_history_app">
+            <column name="application_id"/>
+            <column name="transitioned_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="application_status_history"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="021-create-recruiters-table" author="eurojob-architect">
+        <comment>Create recruiters CRM contact table</comment>
+        <createTable tableName="recruiters">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_recruiters" nullable="false"/>
+            </column>
+            <column name="user_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_id" type="BIGINT UNSIGNED"/>
+            <column name="full_name" type="VARCHAR(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_name" type="VARCHAR(200)"/>
+            <column name="email" type="VARCHAR(150)"/>
+            <column name="linkedin_url" type="VARCHAR(255)"/>
+            <column name="phone" type="VARCHAR(50)"/>
+            <column name="notes" type="TEXT"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="recruiters"
+                                 baseColumnNames="user_id"
+                                 constraintName="fk_recruiters_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="recruiters"
+                                 baseColumnNames="company_id"
+                                 constraintName="fk_recruiters_company"
+                                 referencedTableName="companies"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="recruiters" indexName="idx_recruiters_user">
+            <column name="user_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="recruiters"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="022-create-recruiter-interactions-table" author="eurojob-architect">
+        <comment>Create recruiter_interactions communication log table</comment>
+        <createTable tableName="recruiter_interactions">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_recruiter_interactions" nullable="false"/>
+            </column>
+            <column name="recruiter_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="application_id" type="BIGINT UNSIGNED"/>
+            <column name="channel" type="VARCHAR(40)" defaultValue="LINKEDIN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message_type" type="VARCHAR(50)" defaultValue="OUTREACH">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message_body" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sent_at" type="DATETIME"/>
+            <column name="follow_up_reminder_date" type="DATE"/>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="recruiter_interactions"
+                                 baseColumnNames="recruiter_id"
+                                 constraintName="fk_recruiter_interactions_recruiter"
+                                 referencedTableName="recruiters"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="recruiter_interactions"
+                                 baseColumnNames="application_id"
+                                 constraintName="fk_recruiter_interactions_application"
+                                 referencedTableName="job_applications"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="recruiter_interactions" indexName="idx_recruiter_interactions_lookup">
+            <column name="recruiter_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="recruiter_interactions"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

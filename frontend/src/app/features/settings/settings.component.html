@@ -1,0 +1,99 @@
+<div class="settings-page">
+  <app-page-header
+    title="Settings"
+    icon="settings"
+    subtitle="Configure job search criteria, autopilot thresholds, workspace appearance, and session security."
+  >
+    <div page-actions class="header-status-pill" [class.is-autopilot]="preferences()?.autopilotEnabled">
+      <span class="material-symbols-outlined" aria-hidden="true">
+        {{ preferences()?.autopilotEnabled ? 'auto_awesome' : 'tune' }}
+      </span>
+      <span>{{ autopilotSummary() }}</span>
+    </div>
+  </app-page-header>
+
+  @if (loadErrorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ loadErrorMessage() }}</span>
+      <button type="button" class="btn-secondary" data-action="retry-load" (click)="reload()">
+        Retry
+      </button>
+    </div>
+  }
+
+  @if (preferences() && !hasSavedPreferences() && !loadErrorMessage() && activeTab() === 'search') {
+    <div class="status-banner info" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <span>
+        System defaults are preloaded for European sponsorship search. Adjust your targets below and
+        click <strong>Save Search Preferences</strong> to persist them.
+      </span>
+    </div>
+  }
+
+  <nav class="tab-bar" role="tablist" aria-label="Settings sections">
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      data-tab="search"
+      [class.is-active]="activeTab() === 'search'"
+      [attr.aria-selected]="activeTab() === 'search'"
+      (click)="selectTab('search')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">travel_explore</span>
+      <span>Job Search &amp; Autopilot</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      data-tab="appearance"
+      [class.is-active]="activeTab() === 'appearance'"
+      [attr.aria-selected]="activeTab() === 'appearance'"
+      (click)="selectTab('appearance')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">palette</span>
+      <span>Workspace Appearance</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      data-tab="security"
+      [class.is-active]="activeTab() === 'security'"
+      [attr.aria-selected]="activeTab() === 'security'"
+      (click)="selectTab('security')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">verified_user</span>
+      <span>Account &amp; Sessions</span>
+    </button>
+  </nav>
+
+  @if (activeTab() === 'search' && isLoadingPreferences() && !preferences()) {
+    <section class="settings-card">
+      <div class="status-banner info" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+        <span>Loading your saved job search preferences...</span>
+      </div>
+    </section>
+  } @else {
+    <div class="tab-panel" role="tabpanel">
+      @switch (activeTab()) {
+        @case ('search') {
+          <app-search-preferences-section />
+        }
+        @case ('appearance') {
+          <app-workspace-appearance-section />
+        }
+        @case ('security') {
+          <app-account-security-section />
+        }
+      }
+    </div>
+  }
+</div>
+

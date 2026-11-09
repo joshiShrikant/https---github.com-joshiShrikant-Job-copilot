@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="039-add-application-and-recruiter-crm-fields" author="eurojob-architect">
+        <comment>Add application follow-up completion flag, recruiter role title, and recruiter interaction approval/AI draft lifecycle columns</comment>
+
+        <addColumn tableName="job_applications">
+            <column name="follow_up_completed" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <createIndex tableName="job_applications" indexName="idx_applications_interview">
+            <column name="user_id"/>
+            <column name="next_interview_date"/>
+        </createIndex>
+
+        <addColumn tableName="recruiters">
+            <column name="role_title" type="VARCHAR(120)"/>
+        </addColumn>
+
+        <createIndex tableName="recruiters" indexName="idx_recruiters_user_company">
+            <column name="user_id"/>
+            <column name="company_id"/>
+        </createIndex>
+
+        <addColumn tableName="recruiter_interactions">
+            <column name="subject_line" type="VARCHAR(255)"/>
+            <column name="status" type="VARCHAR(30)" defaultValue="DRAFT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="edited_by_user" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ai_generated" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ai_provider" type="VARCHAR(50)"/>
+            <column name="ai_model_used" type="VARCHAR(100)"/>
+            <column name="approved_at" type="DATETIME"/>
+            <column name="reminder_completed" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <createIndex tableName="recruiter_interactions" indexName="idx_recruiter_interactions_reminder">
+            <column name="follow_up_reminder_date"/>
+            <column name="reminder_completed"/>
+        </createIndex>
+
+        <createIndex tableName="recruiter_interactions" indexName="idx_recruiter_interactions_app">
+            <column name="application_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="recruiter_interactions" indexName="idx_recruiter_interactions_app"/>
+            <dropIndex tableName="recruiter_interactions" indexName="idx_recruiter_interactions_reminder"/>
+            <dropColumn tableName="recruiter_interactions" columnName="reminder_completed"/>
+            <dropColumn tableName="recruiter_interactions" columnName="approved_at"/>
+            <dropColumn tableName="recruiter_interactions" columnName="ai_model_used"/>
+            <dropColumn tableName="recruiter_interactions" columnName="ai_provider"/>
+            <dropColumn tableName="recruiter_interactions" columnName="ai_generated"/>
+            <dropColumn tableName="recruiter_interactions" columnName="edited_by_user"/>
+            <dropColumn tableName="recruiter_interactions" columnName="status"/>
+            <dropColumn tableName="recruiter_interactions" columnName="subject_line"/>
+            <dropIndex tableName="recruiters" indexName="idx_recruiters_user_company"/>
+            <dropColumn tableName="recruiters" columnName="role_title"/>
+            <dropIndex tableName="job_applications" indexName="idx_applications_interview"/>
+            <dropColumn tableName="job_applications" columnName="follow_up_completed"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

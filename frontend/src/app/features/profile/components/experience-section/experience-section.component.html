@@ -1,0 +1,268 @@
+<div class="section-stack">
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="status-banner success" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>Work Experience</h2>
+        <p>Verified career history used by AI tailoring without fabricating responsibilities.</p>
+      </div>
+
+      @if (!isFormOpen()) {
+        <button type="button" class="btn-primary" (click)="openCreateForm()">
+          <span class="material-symbols-outlined" aria-hidden="true">add</span>
+          Add Experience
+        </button>
+      }
+    </div>
+
+    @if (isFormOpen()) {
+      <form class="editor-panel" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="form-grid">
+          <div class="field-group">
+            <label class="field-label" for="exp-company">
+              Company name <span class="required-mark">*</span>
+            </label>
+            <input
+              id="exp-company"
+              type="text"
+              class="field-input"
+              [class.is-invalid]="
+                form.controls.companyName.invalid && form.controls.companyName.touched
+              "
+              formControlName="companyName"
+              placeholder="e.g. Adyen"
+            />
+            @if (form.controls.companyName.invalid && form.controls.companyName.touched) {
+              <span class="field-error">Company name is required.</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="exp-designation">
+              Job title / designation <span class="required-mark">*</span>
+            </label>
+            <input
+              id="exp-designation"
+              type="text"
+              class="field-input"
+              [class.is-invalid]="
+                form.controls.designation.invalid && form.controls.designation.touched
+              "
+              formControlName="designation"
+              placeholder="e.g. Senior Software Engineer"
+            />
+            @if (form.controls.designation.invalid && form.controls.designation.touched) {
+              <span class="field-error">Designation is required.</span>
+            }
+          </div>
+
+          <div class="field-group field-full">
+            <label class="field-label" for="exp-location">Location</label>
+            <input
+              id="exp-location"
+              type="text"
+              class="field-input"
+              formControlName="location"
+              placeholder="e.g. Amsterdam, Netherlands (or Remote)"
+            />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="exp-start-date">
+              Start date <span class="required-mark">*</span>
+            </label>
+            <input
+              id="exp-start-date"
+              type="date"
+              [max]="todayDate"
+              class="field-input"
+              [class.is-invalid]="form.controls.startDate.invalid && form.controls.startDate.touched"
+              formControlName="startDate"
+            />
+            @if (form.controls.startDate.invalid && form.controls.startDate.touched) {
+              <span class="field-error">
+                @if (form.controls.startDate.errors?.['futureDate']) {
+                  Start date cannot be in the future.
+                } @else {
+                  Start date is required.
+                }
+              </span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="exp-end-date">End date</label>
+            <input
+              id="exp-end-date"
+              type="date"
+              class="field-input"
+              [class.is-invalid]="form.errors?.['dateRangeInvalid']"
+              formControlName="endDate"
+            />
+            @if (form.errors?.['dateRangeInvalid']) {
+              <span class="field-error">End date cannot precede the start date.</span>
+            }
+          </div>
+
+          <div class="field-group field-full">
+            <label class="checkbox-row">
+              <input type="checkbox" formControlName="current" />
+              <span>I currently work in this role</span>
+            </label>
+          </div>
+
+          <div class="field-group field-full">
+            <label class="field-label" for="exp-description">Responsibilities &amp; impact</label>
+            <textarea
+              id="exp-description"
+              class="field-textarea"
+              formControlName="description"
+              rows="4"
+              placeholder="Describe systems owned, architecture decisions, latency/throughput metrics, and impact..."
+            ></textarea>
+          </div>
+
+          <div class="field-group field-full">
+            <label class="field-label" for="exp-skills-input">Technologies / skills used</label>
+            <div class="chip-entry-row">
+              <input
+                id="exp-skills-input"
+                type="text"
+                class="field-input"
+                [value]="skillDraft()"
+                (input)="onSkillDraftInput($event)"
+                (keydown)="onSkillKeydown($event)"
+                placeholder="Type a skill and press Enter or comma (e.g. Java, Kafka)"
+              />
+              <button type="button" class="btn-secondary" (click)="addSkillUsed()">Add</button>
+            </div>
+
+            @if (skillsUsed().length > 0) {
+              <div class="chip-list">
+                @for (skill of skillsUsed(); track skill) {
+                  <span class="chip-pill">
+                    {{ skill }}
+                    <button
+                      type="button"
+                      class="chip-remove"
+                      [attr.aria-label]="'Remove skill ' + skill"
+                      (click)="removeSkillUsed(skill)"
+                    >
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            <span class="material-symbols-outlined" aria-hidden="true">check</span>
+            @if (isSubmitting()) {
+              Saving...
+            } @else if (editingId() !== null) {
+              Update Experience
+            } @else {
+              Save Experience
+            }
+          </button>
+        </div>
+      </form>
+    }
+
+    @if (experiences().length === 0) {
+      <div class="empty-state">
+        <span class="material-symbols-outlined" aria-hidden="true">work_history</span>
+        <h3>No work experience added yet</h3>
+        <p>
+          Add your roles and technical accomplishments so AI resume generation stays strictly grounded
+          in your real career timeline.
+        </p>
+      </div>
+    } @else {
+      <div class="timeline-list">
+        @for (item of experiences(); track item.id) {
+          <article class="timeline-card">
+            <div class="timeline-head">
+              <div>
+                <div class="role-title-row">
+                  <h3>{{ item.designation }}</h3>
+                  @if (item.current) {
+                    <span class="badge-pill success">Current</span>
+                  }
+                </div>
+                <p class="org-subtitle">
+                  <strong>{{ item.companyName }}</strong>
+                  @if (item.location) {
+                    <span>· {{ item.location }}</span>
+                  }
+                  <span>· {{ formatDateRange(item) }}</span>
+                </p>
+              </div>
+
+              <div class="item-actions">
+                @if (confirmDeleteId() === item.id) {
+                  <button
+                    type="button"
+                    class="btn-danger-ghost"
+                    [disabled]="deletingId() === item.id"
+                    (click)="confirmDelete(item)"
+                  >
+                    Confirm Delete
+                  </button>
+                  <button type="button" class="btn-icon" (click)="cancelDelete()">Cancel</button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn-icon"
+                    [attr.aria-label]="'Edit experience at ' + item.companyName"
+                    (click)="openEditForm(item)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-danger-ghost"
+                    [attr.aria-label]="'Delete experience at ' + item.companyName"
+                    (click)="requestDelete(item.id)"
+                  >
+                    <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+                  </button>
+                }
+              </div>
+            </div>
+
+            @if (item.description) {
+              <p class="entry-description">{{ item.description }}</p>
+            }
+
+            @if (item.skillsUsed.length > 0) {
+              <div class="chip-list">
+                @for (tag of item.skillsUsed; track tag) {
+                  <span class="chip-pill">{{ tag }}</span>
+                }
+              </div>
+            }
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>
+

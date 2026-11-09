@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="036-add-master-resume-parsing-fields" author="eurojob-architect">
+        <comment>Add master resume parsing status, AI attribution, extraction telemetry, and approval timestamp columns to resumes</comment>
+        <addColumn tableName="resumes">
+            <column name="parse_status" type="VARCHAR(30)" defaultValue="NOT_PARSED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parsed_at" type="DATETIME"/>
+            <column name="approved_at" type="DATETIME"/>
+            <column name="ai_provider" type="VARCHAR(50)"/>
+            <column name="ai_model_used" type="VARCHAR(100)"/>
+            <column name="extracted_char_count" type="INT"/>
+        </addColumn>
+
+        <createIndex tableName="resumes" indexName="idx_resumes_parse_status">
+            <column name="user_id"/>
+            <column name="parse_status"/>
+            <column name="is_master_approved"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="resumes" indexName="idx_resumes_parse_status"/>
+            <dropColumn tableName="resumes" columnName="extracted_char_count"/>
+            <dropColumn tableName="resumes" columnName="ai_model_used"/>
+            <dropColumn tableName="resumes" columnName="ai_provider"/>
+            <dropColumn tableName="resumes" columnName="approved_at"/>
+            <dropColumn tableName="resumes" columnName="parsed_at"/>
+            <dropColumn tableName="resumes" columnName="parse_status"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

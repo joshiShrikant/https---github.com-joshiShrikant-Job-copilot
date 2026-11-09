@@ -1,0 +1,131 @@
+# ==============================================================================
+# EuroJob Copilot - Containerized Stack (Development & Staging Base)
+# Usage:
+#   1. cp .env.example .env  (and update credential placeholders)
+#   2. docker compose up --build -d
+# Production:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+# ==============================================================================
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: eurojob-mysql
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-eurojob_copilot}
+      MYSQL_USER: ${MYSQL_USER:-eurojob_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set in .env}
+    ports:
+      - "${MYSQL_EXTERNAL_PORT:-3307}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -u root || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - eurojob-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eurojob-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      PORT: 8080
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE:-eurojob_copilot}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-eurojob_copilot}?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-eurojob_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}
+      LIQUIBASE_ENABLED: ${LIQUIBASE_ENABLED:-true}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRATION_SECONDS: ${JWT_EXPIRATION_SECONDS:-900}
+      JWT_REFRESH_EXPIRATION_SECONDS: ${JWT_REFRESH_EXPIRATION_SECONDS:-604800}
+      JWT_ISSUER: ${JWT_ISSUER:-eurojob-copilot}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200,http://127.0.0.1:4200}
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
+      RATE_LIMIT_WINDOW_SECONDS: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      RATE_LIMIT_AUTH_MAX_REQUESTS: ${RATE_LIMIT_AUTH_MAX_REQUESTS:-20}
+      RATE_LIMIT_AI_MAX_REQUESTS: ${RATE_LIMIT_AI_MAX_REQUESTS:-30}
+      RATE_LIMIT_API_MAX_REQUESTS: ${RATE_LIMIT_API_MAX_REQUESTS:-180}
+      RESUME_STORAGE_PATH: ${RESUME_STORAGE_PATH:-/var/lib/eurojob-copilot/resumes}
+      RESUME_MAX_FILE_SIZE_BYTES: ${RESUME_MAX_FILE_SIZE_BYTES:-10485760}
+      APP_SCHEDULING_ENABLED: ${APP_SCHEDULING_ENABLED:-true}
+      JOB_INGESTION_ENABLED: ${JOB_INGESTION_ENABLED:-true}
+      JOB_INGESTION_SCHEDULER_ENABLED: ${JOB_INGESTION_SCHEDULER_ENABLED:-true}
+      ARBEITNOW_ENABLED: ${ARBEITNOW_ENABLED:-true}
+      ADZUNA_ENABLED: ${ADZUNA_ENABLED:-true}
+      ADZUNA_APP_ID: ${ADZUNA_APP_ID:-}
+      ADZUNA_APP_KEY: ${ADZUNA_APP_KEY:-}
+      IND_SPONSOR_SYNC_ENABLED: ${IND_SPONSOR_SYNC_ENABLED:-true}
+      IND_SCHEDULER_ENABLED: ${IND_SCHEDULER_ENABLED:-false}
+      AI_ENABLED: ${AI_ENABLED:-true}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_CONNECT_TIMEOUT_MS: ${AI_CONNECT_TIMEOUT_MS:-10000}
+      AI_READ_TIMEOUT_MS: ${AI_READ_TIMEOUT_MS:-75000}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      GEMINI_MAX_TOKENS: ${GEMINI_MAX_TOKENS:-8192}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-sonnet-latest}
+      AUTOPILOT_SCHEDULER_ENABLED: ${AUTOPILOT_SCHEDULER_ENABLED:-true}
+      NOTIFICATIONS_EMAIL_ENABLED: ${NOTIFICATIONS_EMAIL_ENABLED:-false}
+      SPRINGDOC_API_DOCS_ENABLED: ${SPRINGDOC_API_DOCS_ENABLED:-true}
+      SPRINGDOC_SWAGGER_UI_ENABLED: ${SPRINGDOC_SWAGGER_UI_ENABLED:-true}
+    volumes:
+      - resumes_data:/var/lib/eurojob-copilot/resumes
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/v1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 45s
+    networks:
+      - eurojob-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eurojob-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-4200}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - eurojob-network
+
+volumes:
+  mysql_data:
+    driver: local
+  resumes_data:
+    driver: local
+
+networks:
+  eurojob-network:
+    driver: bridge

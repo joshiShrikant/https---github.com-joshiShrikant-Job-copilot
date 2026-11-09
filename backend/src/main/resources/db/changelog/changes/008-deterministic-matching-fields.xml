@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="026-add-deterministic-matching-fields" author="eurojob-architect">
+        <comment>Add deterministic experience compatibility and recommendation reasons columns to job_match_scores</comment>
+        <addColumn tableName="job_match_scores">
+            <column name="experience_compatibility" type="VARCHAR(255)"/>
+            <column name="recommendation_reasons" type="JSON"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="job_match_scores" columnName="recommendation_reasons"/>
+            <dropColumn tableName="job_match_scores" columnName="experience_compatibility"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

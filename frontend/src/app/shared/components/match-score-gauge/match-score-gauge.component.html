@@ -1,0 +1,41 @@
+<div
+  class="match-gauge"
+  [class.size-sm]="size() === 'sm'"
+  [class.size-lg]="size() === 'lg'"
+  [attr.data-tier]="tier()"
+  role="meter"
+  [attr.aria-valuemin]="0"
+  [attr.aria-valuemax]="100"
+  [attr.aria-valuenow]="normalizedScore()"
+  [attr.aria-label]="ariaLabelText()"
+  [attr.title]="ariaLabelText()"
+>
+  <div class="ring-wrap">
+    <svg viewBox="0 0 44 44" class="gauge-svg" aria-hidden="true">
+      <circle class="ring-track" cx="22" cy="22" r="18" />
+      <circle
+        class="ring-progress"
+        cx="22"
+        cy="22"
+        r="18"
+        [style.strokeDasharray]="circumference"
+        [style.strokeDashoffset]="dashOffset()"
+      />
+    </svg>
+    <span class="score-value">
+      @if (normalizedScore() !== null) {
+        {{ normalizedScore() }}<span class="pct-sign">%</span>
+      } @else {
+        —
+      }
+    </span>
+  </div>
+
+  @if (showLabel()) {
+    <div class="gauge-meta">
+      <span class="meta-title">{{ label() }}</span>
+      <span class="meta-tier">{{ tierDescription() }}</span>
+    </div>
+  }
+</div>
+

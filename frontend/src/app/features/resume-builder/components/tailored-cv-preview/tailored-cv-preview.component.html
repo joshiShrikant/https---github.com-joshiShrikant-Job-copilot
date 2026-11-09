@@ -1,0 +1,165 @@
+<div class="preview-toolbar">
+  <div class="preview-meta">
+    <span class="template-badge">{{ templateLabel() }} Template Preview</span>
+    <span class="preview-hint">A4 export layout · Live reflection of current draft</span>
+  </div>
+
+  <div class="template-switcher" role="group" aria-label="Switch preview template">
+    @for (tpl of templateOptions; track tpl.value) {
+      <button
+        type="button"
+        class="tpl-pill"
+        [class.is-active]="template() === tpl.value"
+        [attr.data-preview-template]="tpl.value"
+        (click)="selectTemplate(tpl.value)"
+      >
+        {{ tpl.label }}
+      </button>
+    }
+  </div>
+</div>
+
+<article [class]="previewClass()" data-builder-cv-sheet>
+  @if (template() === 'EUROPASS') {
+    <div class="europass-eyebrow">EUROPASS CURRICULUM VITAE</div>
+  }
+  @if (header(); as hdr) {
+    <header class="cv-header">
+      <h1>{{ hdr.fullName || 'Candidate Name' }}</h1>
+      @if (hdr.headline) {
+        <p class="cv-headline">{{ hdr.headline }}</p>
+      }
+      <div class="cv-contact-row">
+        @if (hdr.email) { <span>{{ hdr.email }}</span> }
+        @if (hdr.location) { <span>{{ hdr.location }}</span> }
+        @if (hdr.yearsOfExperience !== null && hdr.yearsOfExperience !== undefined) {
+          <span>{{ hdr.yearsOfExperience }}+ yrs experience</span>
+        }
+        @if (hdr.workAuthorizationSummary) { <span>{{ hdr.workAuthorizationSummary }}</span> }
+      </div>
+      <div class="cv-links-row">
+        @if (isSafeHttpUrl(hdr.linkedinUrl)) {
+          <a [href]="hdr.linkedinUrl!" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        }
+        @if (isSafeHttpUrl(hdr.githubUrl)) {
+          <a [href]="hdr.githubUrl!" target="_blank" rel="noopener noreferrer">GitHub</a>
+        }
+        @if (isSafeHttpUrl(hdr.portfolioUrl)) {
+          <a [href]="hdr.portfolioUrl!" target="_blank" rel="noopener noreferrer">Portfolio</a>
+        }
+      </div>
+    </header>
+  }
+
+  @if (summary()) {
+    <section class="cv-section">
+      <h3>{{ headings().summary }}</h3>
+      <p class="cv-summary">{{ summary() }}</p>
+    </section>
+  }
+
+  @if (highlightedSkills().length > 0 || additionalSkills().length > 0) {
+    <section class="cv-section">
+      <h3>{{ headings().skills }}</h3>
+      @if (highlightedSkills().length > 0) {
+        <p class="cv-skill-line">
+          <strong>Core Alignment:</strong> {{ highlightedSkills().join(' · ') }}
+        </p>
+      }
+      @if (additionalSkills().length > 0) {
+        <p class="cv-skill-line">
+          <strong>Additional Verified Skills:</strong> {{ additionalSkills().join(' · ') }}
+        </p>
+      }
+    </section>
+  }
+
+  @if (experiences().length > 0) {
+    <section class="cv-section">
+      <h3>{{ headings().experience }}</h3>
+      @for (exp of experiences(); track $index) {
+        <div class="cv-exp-item">
+          <div class="cv-exp-head">
+            <strong>{{ exp.designation }} — {{ exp.companyName }}</strong>
+            <span>{{ formatDateRange(exp.startDate, exp.endDate, exp.current) }}</span>
+          </div>
+          @if (exp.location) {
+            <div class="cv-exp-loc">{{ exp.location }}</div>
+          }
+          @if (exp.tailoredBullets.length > 0) {
+            <ul>
+              @for (b of exp.tailoredBullets; track $index) {
+                @if (b.trim()) {
+                  <li>{{ b }}</li>
+                }
+              }
+            </ul>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (projects().length > 0) {
+    <section class="cv-section">
+      <h3>{{ headings().projects }}</h3>
+      @for (proj of projects(); track $index) {
+        <div class="cv-exp-item">
+          <div class="cv-exp-head">
+            <strong>{{ proj.name }}</strong>
+            @if (isSafeHttpUrl(proj.url)) {
+              <a [href]="proj.url!" target="_blank" rel="noopener noreferrer">Repository</a>
+            }
+          </div>
+          @if (proj.description) {
+            <p class="cv-proj-desc">{{ proj.description }}</p>
+          }
+          @if (proj.technologies.length > 0) {
+            <p class="cv-skill-line"><strong>Stack:</strong> {{ proj.technologies.join(', ') }}</p>
+          }
+          @if (proj.tailoredBullets.length > 0) {
+            <ul>
+              @for (b of proj.tailoredBullets; track $index) {
+                @if (b.trim()) {
+                  <li>{{ b }}</li>
+                }
+              }
+            </ul>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (educations().length > 0) {
+    <section class="cv-section">
+      <h3>{{ headings().education }}</h3>
+      @for (edu of educations(); track $index) {
+        <div class="cv-exp-item">
+          <div class="cv-exp-head">
+            <strong>{{ edu.degree }} in {{ edu.fieldOfStudy }} — {{ edu.institution }}</strong>
+            <span>{{ formatDateRange(edu.startDate, edu.endDate, false) }}</span>
+          </div>
+          @if (edu.country || edu.gradeOrGpa) {
+            <div class="cv-exp-loc">
+              {{ edu.country }}@if (edu.country && edu.gradeOrGpa) { · }@if (edu.gradeOrGpa) {Grade: {{ edu.gradeOrGpa }}}
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  @if (languages().length > 0 || certifications().length > 0) {
+    <section class="cv-section">
+      <h3>{{ headings().languagesCerts }}</h3>
+      @if (languages().length > 0) {
+        <p class="cv-skill-line"><strong>Languages:</strong> {{ languages().join(' · ') }}</p>
+      }
+      @if (certifications().length > 0) {
+        <p class="cv-skill-line"><strong>Certifications:</strong> {{ certifications().join(' · ') }}</p>
+      }
+    </section>
+  }
+</article>
+

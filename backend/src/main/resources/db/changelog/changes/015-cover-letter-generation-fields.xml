@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="038-add-cover-letter-generation-fields" author="eurojob-architect">
+        <comment>Add personal notes, structured grounding metadata JSON, word count, AI attribution, and human edit flag to cover_letters</comment>
+        <addColumn tableName="cover_letters">
+            <column name="personal_notes" type="VARCHAR(1000)"/>
+            <column name="metadata_json" type="JSON"/>
+            <column name="word_count" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ai_provider" type="VARCHAR(50)"/>
+            <column name="ai_model_used" type="VARCHAR(100)"/>
+            <column name="generated_at" type="DATETIME"/>
+            <column name="edited_by_user" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <createIndex tableName="cover_letters" indexName="idx_cover_letters_user_created">
+            <column name="user_id"/>
+            <column name="created_at"/>
+        </createIndex>
+
+        <createIndex tableName="cover_letters" indexName="idx_cover_letters_user_job_ver">
+            <column name="user_id"/>
+            <column name="job_id"/>
+            <column name="version_number"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="cover_letters" indexName="idx_cover_letters_user_job_ver"/>
+            <dropIndex tableName="cover_letters" indexName="idx_cover_letters_user_created"/>
+            <dropColumn tableName="cover_letters" columnName="edited_by_user"/>
+            <dropColumn tableName="cover_letters" columnName="generated_at"/>
+            <dropColumn tableName="cover_letters" columnName="ai_model_used"/>
+            <dropColumn tableName="cover_letters" columnName="ai_provider"/>
+            <dropColumn tableName="cover_letters" columnName="word_count"/>
+            <dropColumn tableName="cover_letters" columnName="metadata_json"/>
+            <dropColumn tableName="cover_letters" columnName="personal_notes"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

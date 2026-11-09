@@ -1,0 +1,138 @@
+<div class="profile-page">
+  <app-page-header
+    title="My Profile"
+    icon="account_circle"
+    subtitle="Manage your candidate profile, skills inventory, career timeline, education, and master CVs."
+  >
+    <div page-actions class="completeness-card">
+      <div class="completeness-head">
+        <span>Profile Completeness</span>
+        <strong>{{ completenessPercent() }}%</strong>
+      </div>
+      <div
+        class="completeness-track"
+        role="progressbar"
+        [attr.aria-valuenow]="completenessPercent()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <div class="completeness-fill" [style.width.%]="completenessPercent()"></div>
+      </div>
+    </div>
+  </app-page-header>
+
+  @if (loadErrorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ loadErrorMessage() }}</span>
+      <button type="button" class="btn-secondary" (click)="reload()">Retry</button>
+    </div>
+  }
+
+  @if (!isLoadingProfile() && !profileExists() && !loadErrorMessage()) {
+    <div class="status-banner info" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <span>
+        Welcome to EuroJob Copilot! Your candidate profile has not been saved yet. Review the
+        defaults below and click <strong>Create Profile</strong> to activate personalized job
+        matching.
+      </span>
+    </div>
+  }
+
+  <nav class="tab-bar" role="tablist" aria-label="Profile sections">
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'overview'"
+      [attr.aria-selected]="activeTab() === 'overview'"
+      (click)="selectTab('overview')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">person</span>
+      <span>Overview &amp; Basics</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'skills'"
+      [attr.aria-selected]="activeTab() === 'skills'"
+      (click)="selectTab('skills')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">code_blocks</span>
+      <span>Skills</span>
+      <span class="tab-count">{{ skills().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'experience'"
+      [attr.aria-selected]="activeTab() === 'experience'"
+      (click)="selectTab('experience')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">work_history</span>
+      <span>Experience</span>
+      <span class="tab-count">{{ experiences().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'education'"
+      [attr.aria-selected]="activeTab() === 'education'"
+      (click)="selectTab('education')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">school</span>
+      <span>Education</span>
+      <span class="tab-count">{{ educations().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      role="tab"
+      class="tab-btn"
+      [class.is-active]="activeTab() === 'resumes'"
+      [attr.aria-selected]="activeTab() === 'resumes'"
+      (click)="selectTab('resumes')"
+    >
+      <span class="material-symbols-outlined" aria-hidden="true">description</span>
+      <span>Resumes</span>
+      <span class="tab-count">{{ resumes().length }}</span>
+    </button>
+  </nav>
+
+  @if (isLoadingProfile()) {
+    <div class="section-card">
+      <div class="status-banner info" role="status">
+        <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+        <span>Loading your candidate profile...</span>
+      </div>
+    </div>
+  } @else {
+    <div class="tab-panel" role="tabpanel">
+      @switch (activeTab()) {
+        @case ('overview') {
+          <app-profile-basics-section />
+        }
+        @case ('skills') {
+          <app-skills-section />
+        }
+        @case ('experience') {
+          <app-experience-section />
+        }
+        @case ('education') {
+          <app-education-section />
+        }
+        @case ('resumes') {
+          <app-resumes-section (masterApproved)="onMasterResumeApproved()" />
+        }
+      }
+    </div>
+  }
+</div>
+

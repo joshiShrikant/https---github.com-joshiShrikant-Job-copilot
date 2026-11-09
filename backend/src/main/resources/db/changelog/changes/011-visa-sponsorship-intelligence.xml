@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="030-extend-company-sponsorship-records" author="eurojob-architect">
+        <comment>Store verification confidence level and last check timestamp on company_sponsorship_records</comment>
+        <addColumn tableName="company_sponsorship_records">
+            <column name="confidence_level" type="VARCHAR(30)" defaultValue="VERIFIED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_checked_at" type="DATETIME"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="company_sponsorship_records" columnName="last_checked_at"/>
+            <dropColumn tableName="company_sponsorship_records" columnName="confidence_level"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="031-create-official-sponsor-registry-entries" author="eurojob-architect">
+        <comment>Create lookup table for synced official government sponsor registers (such as Netherlands IND)</comment>
+        <createTable tableName="official_sponsor_registry_entries">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_official_sponsor_registry_entries" nullable="false"/>
+            </column>
+            <column name="country" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registry_source" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registry_identifier" type="VARCHAR(150)"/>
+            <column name="official_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="normalized_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)" defaultValue="RECOGNIZED_SPONSOR">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_url" type="VARCHAR(500)"/>
+            <column name="evidence_notes" type="TEXT"/>
+            <column name="active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="synced_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="official_sponsor_registry_entries"
+                             columnNames="registry_source, country, normalized_name"
+                             constraintName="uk_official_registry_source_norm"/>
+
+        <createIndex tableName="official_sponsor_registry_entries" indexName="idx_official_registry_lookup">
+            <column name="country"/>
+            <column name="normalized_name"/>
+            <column name="active"/>
+        </createIndex>
+
+        <createIndex tableName="official_sponsor_registry_entries" indexName="idx_official_registry_source_active">
+            <column name="registry_source"/>
+            <column name="active"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="official_sponsor_registry_entries"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="032-create-sponsorship-verification-history" author="eurojob-architect">
+        <comment>Store immutable verification history for company and country visa sponsorship checks</comment>
+        <createTable tableName="sponsorship_verification_history">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_sponsorship_verification_history" nullable="false"/>
+            </column>
+            <column name="company_id" type="BIGINT UNSIGNED"/>
+            <column name="job_id" type="BIGINT UNSIGNED"/>
+            <column name="triggered_by_user_id" type="BIGINT UNSIGNED"/>
+            <column name="company_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="normalized_company_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country_iso_code" type="VARCHAR(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vacancy_status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vacancy_sponsorship_confirmed" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vacancy_sponsorship_assumed" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="confidence_level" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registry_source" type="VARCHAR(100)"/>
+            <column name="registry_identifier" type="VARCHAR(150)"/>
+            <column name="official_registered_name" type="VARCHAR(255)"/>
+            <column name="evidence_summary" type="TEXT"/>
+            <column name="evidence_signals" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_url" type="VARCHAR(500)"/>
+            <column name="vacancy_caveat" type="TEXT"/>
+            <column name="verified_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sponsorship_verification_history"
+                                 baseColumnNames="company_id"
+                                 constraintName="fk_sponsorship_history_company"
+                                 referencedTableName="companies"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <addForeignKeyConstraint baseTableName="sponsorship_verification_history"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_sponsorship_history_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <addForeignKeyConstraint baseTableName="sponsorship_verification_history"
+                                 baseColumnNames="triggered_by_user_id"
+                                 constraintName="fk_sponsorship_history_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="sponsorship_verification_history" indexName="idx_sponsorship_history_user_time">
+            <column name="triggered_by_user_id"/>
+            <column name="verified_at"/>
+        </createIndex>
+
+        <createIndex tableName="sponsorship_verification_history" indexName="idx_sponsorship_history_company_country">
+            <column name="normalized_company_name"/>
+            <column name="country"/>
+            <column name="verified_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="sponsorship_verification_history"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="033-create-sponsorship-registry-sync-logs" author="eurojob-architect">
+        <comment>Store execution telemetry for official government sponsor registry syncs</comment>
+        <createTable tableName="sponsorship_registry_sync_logs">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_sponsorship_registry_sync_logs" nullable="false"/>
+            </column>
+            <column name="registry_source" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_url" type="VARCHAR(500)"/>
+            <column name="entries_parsed" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entries_upserted" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entries_deactivated" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="companies_linked" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_message" type="TEXT"/>
+            <column name="execution_duration_ms" type="BIGINT"/>
+            <column name="synced_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="sponsorship_registry_sync_logs" indexName="idx_registry_sync_source_time">
+            <column name="registry_source"/>
+            <column name="synced_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="sponsorship_registry_sync_logs"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

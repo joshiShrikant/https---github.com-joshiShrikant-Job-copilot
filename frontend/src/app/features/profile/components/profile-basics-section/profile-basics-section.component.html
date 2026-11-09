@@ -1,0 +1,359 @@
+<form class="section-stack" [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert">
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  @if (successMessage()) {
+    <div class="status-banner success" role="status">
+      <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>Identity &amp; Current Role</h2>
+        <p>Your headline details used for employer outreach, AI resume headers, and match scoring.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label class="field-label" for="profile-first-name">
+          First name <span class="required-mark">*</span>
+        </label>
+        <input
+          id="profile-first-name"
+          type="text"
+          class="field-input"
+          [class.is-invalid]="form.controls.firstName.invalid && form.controls.firstName.touched"
+          formControlName="firstName"
+          placeholder="Alex"
+        />
+        @if (form.controls.firstName.invalid && form.controls.firstName.touched) {
+          <span class="field-error">First name must be between 2 and 100 characters.</span>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-last-name">
+          Last name <span class="required-mark">*</span>
+        </label>
+        <input
+          id="profile-last-name"
+          type="text"
+          class="field-input"
+          [class.is-invalid]="form.controls.lastName.invalid && form.controls.lastName.touched"
+          formControlName="lastName"
+          placeholder="Mueller"
+        />
+        @if (form.controls.lastName.invalid && form.controls.lastName.touched) {
+          <span class="field-error">Last name must be between 2 and 100 characters.</span>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-email">Account email</label>
+        <input
+          id="profile-email"
+          type="email"
+          class="field-input"
+          [value]="emailDisplay()"
+          readonly
+          tabindex="-1"
+        />
+        <span class="field-hint">Managed through your authenticated account.</span>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-designation">Current headline / designation</label>
+        <input
+          id="profile-designation"
+          type="text"
+          class="field-input"
+          formControlName="currentDesignation"
+          placeholder="Senior Java Backend Engineer"
+        />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-years-exp">Total years of experience</label>
+        <input
+          id="profile-years-exp"
+          type="number"
+          step="0.5"
+          min="0"
+          max="70"
+          class="field-input"
+          [class.is-invalid]="
+            form.controls.yearsOfExperience.invalid && form.controls.yearsOfExperience.touched
+          "
+          formControlName="yearsOfExperience"
+        />
+        @if (form.controls.yearsOfExperience.invalid && form.controls.yearsOfExperience.touched) {
+          <span class="field-error">Years of experience must be between 0 and 70.</span>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-notice-days">Notice period (days)</label>
+        <input
+          id="profile-notice-days"
+          type="number"
+          min="0"
+          max="365"
+          class="field-input"
+          [class.is-invalid]="
+            form.controls.noticePeriodDays.invalid && form.controls.noticePeriodDays.touched
+          "
+          formControlName="noticePeriodDays"
+        />
+        @if (form.controls.noticePeriodDays.invalid && form.controls.noticePeriodDays.touched) {
+          <span class="field-error">Notice period must be between 0 and 365 days.</span>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-country">Current country</label>
+        <input
+          id="profile-country"
+          type="text"
+          class="field-input"
+          formControlName="currentCountry"
+          placeholder="India"
+        />
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-city">Current city</label>
+        <input
+          id="profile-city"
+          type="text"
+          class="field-input"
+          formControlName="currentCity"
+          placeholder="Bengaluru"
+        />
+      </div>
+
+      <div class="field-group field-full">
+        <label class="field-label" for="profile-bio">Professional summary</label>
+        <textarea
+          id="profile-bio"
+          class="field-textarea"
+          [class.is-invalid]="form.controls.bio.invalid && form.controls.bio.touched"
+          formControlName="bio"
+          rows="4"
+          placeholder="Concise engineering summary highlighting backend systems, distributed scale, and domain focus..."
+        ></textarea>
+        <span class="field-hint">{{ form.controls.bio.value.length }} / 2000 characters</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>European Relocation, Work Authorization &amp; Compensation</h2>
+        <p>Controls visa sponsorship filtering and relocation readiness highlights.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label class="field-label" for="profile-work-auth">Work authorization status</label>
+        <select
+          id="profile-work-auth"
+          class="field-select"
+          formControlName="workAuthorizationStatus"
+        >
+          @for (option of workAuthOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-relocation">Relocation preference</label>
+        <select
+          id="profile-relocation"
+          class="field-select"
+          formControlName="relocationPreference"
+        >
+          @for (option of relocationOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-salary-min">Expected minimum annual salary</label>
+        <input
+          id="profile-salary-min"
+          type="number"
+          min="0"
+          step="1000"
+          class="field-input"
+          [class.is-invalid]="
+            form.controls.expectedSalaryMin.invalid && form.controls.expectedSalaryMin.touched
+          "
+          formControlName="expectedSalaryMin"
+          placeholder="85000"
+        />
+        @if (form.controls.expectedSalaryMin.invalid && form.controls.expectedSalaryMin.touched) {
+          <span class="field-error">Expected salary must be a positive amount.</span>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-currency">Salary currency</label>
+        <select id="profile-currency" class="field-select" formControlName="expectedSalaryCurrency">
+          @for (code of currencies; track code) {
+            <option [value]="code">{{ code }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-target-title-input">Preferred job titles</label>
+        <div class="chip-entry-row">
+          <input
+            id="profile-target-title-input"
+            type="text"
+            class="field-input"
+            [value]="titleDraft()"
+            (input)="onTitleDraftInput($event)"
+            (keydown)="onTagKeydown($event, 'title')"
+            placeholder="e.g. Senior Java Engineer"
+          />
+          <button type="button" class="btn-secondary" (click)="addPreferredTitle()">Add</button>
+        </div>
+        @if (preferredJobTitles().length > 0) {
+          <div class="chip-list">
+            @for (title of preferredJobTitles(); track title) {
+              <span class="chip-pill">
+                {{ title }}
+                <button
+                  type="button"
+                  class="chip-remove"
+                  [attr.aria-label]="'Remove title ' + title"
+                  (click)="removePreferredTitle(title)"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </span>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-target-country-input">Preferred EU countries</label>
+        <div class="chip-entry-row">
+          <input
+            id="profile-target-country-input"
+            type="text"
+            class="field-input"
+            [value]="countryDraft()"
+            (input)="onCountryDraftInput($event)"
+            (keydown)="onTagKeydown($event, 'country')"
+            placeholder="e.g. Germany, Netherlands"
+          />
+          <button type="button" class="btn-secondary" (click)="addPreferredCountry()">Add</button>
+        </div>
+        @if (preferredCountries().length > 0) {
+          <div class="chip-list">
+            @for (country of preferredCountries(); track country) {
+              <span class="chip-pill">
+                {{ country }}
+                <button
+                  type="button"
+                  class="chip-remove"
+                  [attr.aria-label]="'Remove country ' + country"
+                  (click)="removePreferredCountry(country)"
+                >
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section-card">
+    <div class="card-head">
+      <div class="card-title-group">
+        <h2>Professional Links</h2>
+        <p>Include full https:// links shown on applications and tailored resumes.</p>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field-group">
+        <label class="field-label" for="profile-linkedin">LinkedIn URL</label>
+        <input
+          id="profile-linkedin"
+          type="url"
+          class="field-input"
+          [class.is-invalid]="form.controls.linkedinUrl.invalid && form.controls.linkedinUrl.touched"
+          formControlName="linkedinUrl"
+          placeholder="https://www.linkedin.com/in/username"
+        />
+        @if (form.controls.linkedinUrl.invalid && form.controls.linkedinUrl.touched) {
+          <span class="field-error">Enter a valid HTTP or HTTPS URL.</span>
+        }
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="profile-github">GitHub URL</label>
+        <input
+          id="profile-github"
+          type="url"
+          class="field-input"
+          [class.is-invalid]="form.controls.githubUrl.invalid && form.controls.githubUrl.touched"
+          formControlName="githubUrl"
+          placeholder="https://github.com/username"
+        />
+        @if (form.controls.githubUrl.invalid && form.controls.githubUrl.touched) {
+          <span class="field-error">Enter a valid HTTP or HTTPS URL.</span>
+        }
+      </div>
+
+      <div class="field-group field-full">
+        <label class="field-label" for="profile-portfolio">Portfolio / Personal Website</label>
+        <input
+          id="profile-portfolio"
+          type="url"
+          class="field-input"
+          [class.is-invalid]="
+            form.controls.portfolioUrl.invalid && form.controls.portfolioUrl.touched
+          "
+          formControlName="portfolioUrl"
+          placeholder="https://your-site.dev"
+        />
+        @if (form.controls.portfolioUrl.invalid && form.controls.portfolioUrl.touched) {
+          <span class="field-error">Enter a valid HTTP or HTTPS URL.</span>
+        }
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button type="submit" class="btn-primary" [disabled]="isSaving()">
+        <span class="material-symbols-outlined" aria-hidden="true">save</span>
+        @if (isSaving()) {
+          Saving Profile...
+        } @else if (!profileExists()) {
+          Create Profile
+        } @else {
+          Save Changes
+        }
+      </button>
+    </div>
+  </section>
+</form>
+

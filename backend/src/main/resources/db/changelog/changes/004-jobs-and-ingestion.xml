@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="011-create-jobs-table" author="eurojob-architect">
+        <comment>Create jobs table with deduplication canonical hash and filtering indexes</comment>
+        <createTable tableName="jobs">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_jobs" nullable="false"/>
+            </column>
+            <column name="canonical_hash" type="CHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_jobs_canonical_hash"/>
+            </column>
+            <column name="company_id" type="BIGINT UNSIGNED"/>
+            <column name="company_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="normalized_title" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location" type="VARCHAR(255)"/>
+            <column name="city" type="VARCHAR(100)"/>
+            <column name="country" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="work_arrangement" type="VARCHAR(30)" defaultValue="ONSITE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="employment_type" type="VARCHAR(30)" defaultValue="FULL_TIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="experience_level" type="VARCHAR(50)" defaultValue="MID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_experience_years" type="DECIMAL(4,1)"/>
+            <column name="salary_min" type="DECIMAL(12,2)"/>
+            <column name="salary_max" type="DECIMAL(12,2)"/>
+            <column name="salary_currency" type="VARCHAR(3)"/>
+            <column name="salary_period" type="VARCHAR(20)" defaultValue="YEARLY">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description_snippet" type="VARCHAR(500)"/>
+            <column name="skills" type="JSON"/>
+            <column name="source_provider" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_job_id" type="VARCHAR(255)"/>
+            <column name="original_url" type="VARCHAR(1000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="application_url" type="VARCHAR(1000)"/>
+            <column name="sponsor_status" type="VARCHAR(50)" defaultValue="UNCONFIRMED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="posted_at" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="DATETIME"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="jobs"
+                                 baseColumnNames="company_id"
+                                 constraintName="fk_jobs_company"
+                                 referencedTableName="companies"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="jobs" indexName="idx_jobs_filter">
+            <column name="country"/>
+            <column name="work_arrangement"/>
+            <column name="is_active"/>
+        </createIndex>
+
+        <createIndex tableName="jobs" indexName="idx_jobs_posted_at">
+            <column name="posted_at"/>
+        </createIndex>
+
+        <createIndex tableName="jobs" indexName="idx_jobs_sponsor">
+            <column name="sponsor_status"/>
+        </createIndex>
+
+        <createIndex tableName="jobs" indexName="idx_jobs_provider">
+            <column name="source_provider"/>
+            <column name="source_job_id"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="jobs"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="012-create-job-fetch-logs-table" author="eurojob-architect">
+        <comment>Create job_fetch_logs table for ingestion history and failure tracking</comment>
+        <createTable tableName="job_fetch_logs">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_job_fetch_logs" nullable="false"/>
+            </column>
+            <column name="provider_name" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="jobs_fetched" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="jobs_inserted" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="jobs_updated" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="jobs_skipped_duplicates" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_message" type="TEXT"/>
+            <column name="execution_duration_ms" type="BIGINT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fetched_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="job_fetch_logs" indexName="idx_fetch_logs_provider">
+            <column name="provider_name"/>
+            <column name="fetched_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="job_fetch_logs"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="013-create-job-ai-analyses-table" author="eurojob-architect">
+        <comment>Create job_ai_analyses table caching structured AI JD extractions</comment>
+        <createTable tableName="job_ai_analyses">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_job_ai_analyses" nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_ai_analyses_job"/>
+            </column>
+            <column name="required_skills" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nice_to_have_skills" type="JSON"/>
+            <column name="responsibilities" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="benefits" type="JSON"/>
+            <column name="language_requirements" type="JSON"/>
+            <column name="visa_sponsorship_analysis" type="TEXT"/>
+            <column name="relocation_analysis" type="TEXT"/>
+            <column name="summary" type="TEXT"/>
+            <column name="ai_model_used" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="job_ai_analyses"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_ai_analyses_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <rollback>
+            <dropTable tableName="job_ai_analyses"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

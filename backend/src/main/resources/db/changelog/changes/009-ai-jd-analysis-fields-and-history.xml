@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="027-extend-job-ai-analyses-extracted-fields" author="eurojob-architect">
+        <comment>Add full structured JD extraction columns and version metadata to job_ai_analyses</comment>
+        <addColumn tableName="job_ai_analyses">
+            <column name="extracted_title" type="VARCHAR(255)"/>
+            <column name="extracted_company" type="VARCHAR(255)"/>
+            <column name="extracted_country" type="VARCHAR(100)"/>
+            <column name="extracted_location" type="VARCHAR(255)"/>
+            <column name="required_experience_years" type="DECIMAL(4,1)"/>
+            <column name="required_experience_level" type="VARCHAR(50)"/>
+            <column name="required_experience_summary" type="VARCHAR(255)"/>
+            <column name="salary_min" type="DECIMAL(12,2)"/>
+            <column name="salary_max" type="DECIMAL(12,2)"/>
+            <column name="salary_currency" type="VARCHAR(3)"/>
+            <column name="salary_period" type="VARCHAR(20)"/>
+            <column name="work_arrangement" type="VARCHAR(30)"/>
+            <column name="employment_type" type="VARCHAR(30)"/>
+            <column name="sponsorship_offered" type="BOOLEAN"/>
+            <column name="relocation_assistance_offered" type="BOOLEAN"/>
+            <column name="ai_provider" type="VARCHAR(50)"/>
+            <column name="analysis_version" type="INT" defaultValueNumeric="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="raw_payload_json" type="JSON"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="job_ai_analyses" columnName="raw_payload_json"/>
+            <dropColumn tableName="job_ai_analyses" columnName="analysis_version"/>
+            <dropColumn tableName="job_ai_analyses" columnName="ai_provider"/>
+            <dropColumn tableName="job_ai_analyses" columnName="relocation_assistance_offered"/>
+            <dropColumn tableName="job_ai_analyses" columnName="sponsorship_offered"/>
+            <dropColumn tableName="job_ai_analyses" columnName="employment_type"/>
+            <dropColumn tableName="job_ai_analyses" columnName="work_arrangement"/>
+            <dropColumn tableName="job_ai_analyses" columnName="salary_period"/>
+            <dropColumn tableName="job_ai_analyses" columnName="salary_currency"/>
+            <dropColumn tableName="job_ai_analyses" columnName="salary_max"/>
+            <dropColumn tableName="job_ai_analyses" columnName="salary_min"/>
+            <dropColumn tableName="job_ai_analyses" columnName="required_experience_summary"/>
+            <dropColumn tableName="job_ai_analyses" columnName="required_experience_level"/>
+            <dropColumn tableName="job_ai_analyses" columnName="required_experience_years"/>
+            <dropColumn tableName="job_ai_analyses" columnName="extracted_location"/>
+            <dropColumn tableName="job_ai_analyses" columnName="extracted_country"/>
+            <dropColumn tableName="job_ai_analyses" columnName="extracted_company"/>
+            <dropColumn tableName="job_ai_analyses" columnName="extracted_title"/>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="028-create-job-ai-analysis-history-table" author="eurojob-architect">
+        <comment>Store immutable versioned history of AI JD analyses against each job</comment>
+        <createTable tableName="job_ai_analysis_history">
+            <column name="id" type="BIGINT UNSIGNED" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="pk_job_ai_analysis_history" nullable="false"/>
+            </column>
+            <column name="job_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version_number" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="triggered_by_user_id" type="BIGINT UNSIGNED"/>
+            <column name="extracted_title" type="VARCHAR(255)"/>
+            <column name="extracted_company" type="VARCHAR(255)"/>
+            <column name="extracted_country" type="VARCHAR(100)"/>
+            <column name="extracted_location" type="VARCHAR(255)"/>
+            <column name="required_experience_years" type="DECIMAL(4,1)"/>
+            <column name="required_experience_level" type="VARCHAR(50)"/>
+            <column name="required_experience_summary" type="VARCHAR(255)"/>
+            <column name="required_skills" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nice_to_have_skills" type="JSON"/>
+            <column name="responsibilities" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="benefits" type="JSON"/>
+            <column name="language_requirements" type="JSON"/>
+            <column name="salary_min" type="DECIMAL(12,2)"/>
+            <column name="salary_max" type="DECIMAL(12,2)"/>
+            <column name="salary_currency" type="VARCHAR(3)"/>
+            <column name="salary_period" type="VARCHAR(20)"/>
+            <column name="work_arrangement" type="VARCHAR(30)"/>
+            <column name="employment_type" type="VARCHAR(30)"/>
+            <column name="sponsorship_offered" type="BOOLEAN"/>
+            <column name="visa_sponsorship_analysis" type="TEXT"/>
+            <column name="relocation_assistance_offered" type="BOOLEAN"/>
+            <column name="relocation_analysis" type="TEXT"/>
+            <column name="summary" type="TEXT"/>
+            <column name="ai_provider" type="VARCHAR(50)"/>
+            <column name="ai_model_used" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="raw_payload_json" type="JSON"/>
+            <column name="analyzed_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="DATETIME" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="job_ai_analysis_history"
+                                 baseColumnNames="job_id"
+                                 constraintName="fk_ai_history_job"
+                                 referencedTableName="jobs"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+
+        <addForeignKeyConstraint baseTableName="job_ai_analysis_history"
+                                 baseColumnNames="triggered_by_user_id"
+                                 constraintName="fk_ai_history_user"
+                                 referencedTableName="users"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <addUniqueConstraint tableName="job_ai_analysis_history"
+                             columnNames="job_id, version_number"
+                             constraintName="uk_job_ai_history_version"/>
+
+        <createIndex tableName="job_ai_analysis_history" indexName="idx_job_ai_history_lookup">
+            <column name="job_id"/>
+            <column name="analyzed_at"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="job_ai_analysis_history"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
+

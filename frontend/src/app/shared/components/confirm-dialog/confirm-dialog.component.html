@@ -1,0 +1,45 @@
+@if (open()) {
+  <div class="dialog-backdrop" (click)="onBackdropClick()">
+    <div
+      class="dialog-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-message"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-header">
+        <span class="dialog-icon-box" [class.is-danger]="tone() === 'danger'" aria-hidden="true">
+          <span class="material-symbols-outlined">{{ icon() }}</span>
+        </span>
+        <div class="dialog-copy">
+          <h3 id="confirm-dialog-title">{{ title() }}</h3>
+          <p id="confirm-dialog-message">{{ message() }}</p>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <button
+          type="button"
+          class="dialog-btn-secondary"
+          data-dialog-action="cancel"
+          [disabled]="busy()"
+          (click)="onCancel()"
+        >
+          {{ cancelLabel() }}
+        </button>
+        <button
+          type="button"
+          class="dialog-btn-confirm"
+          [class.is-danger]="tone() === 'danger'"
+          data-dialog-action="confirm"
+          [disabled]="busy()"
+          (click)="onConfirm()"
+        >
+          {{ busy() ? 'Working...' : confirmLabel() }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

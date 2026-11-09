@@ -1,0 +1,300 @@
+<div class="analytics-page">
+  <app-page-header
+    title="European Job Market Analytics"
+    icon="insights"
+    [badge]="headerBadge()"
+    subtitle="Multi-country comparison of Angular, Frontend, Java, Full-Stack demand, verified visa sponsorship, English availability, and normalized annual salary bands."
+  >
+    <div page-actions class="header-actions">
+      @if (insights()?.lastDataRefreshAt; as refreshedAt) {
+        <span class="refresh-stamp" data-analytics-refresh-stamp>
+          <span class="material-symbols-outlined" aria-hidden="true">schedule</span>
+          Last feed refresh {{ refreshedAt | timeAgo }}
+        </span>
+      }
+      <button
+        type="button"
+        class="toolbar-btn"
+        data-analytics-action="refresh"
+        [disabled]="loading()"
+        (click)="loadInsights()"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+        <span>{{ loading() ? 'Refreshing...' : 'Refresh Insights' }}</span>
+      </button>
+    </div>
+  </app-page-header>
+
+  <section class="controls-card" aria-label="Analytics filters">
+    <div class="control-group">
+      <span class="control-label">Compare European Countries</span>
+      <div class="pill-row">
+        <button
+          type="button"
+          class="filter-pill"
+          [class.is-active]="selectedCountries().length === 0"
+          data-analytics-country="ALL"
+          (click)="onClearCountries()"
+        >
+          All Discovered ({{ insights()?.availableCountries?.length ?? 0 }})
+        </button>
+        @for (country of insights()?.availableCountries ?? []; track country) {
+          <button
+            type="button"
+            class="filter-pill"
+            [class.is-active]="isCountrySelected(country)"
+            [attr.data-analytics-country]="country"
+            (click)="onToggleCountry(country)"
+          >
+            {{ country }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="control-group window-group">
+      <span class="control-label">Discovery Lookback Window</span>
+      <div class="pill-row">
+        @for (opt of windowOptions; track opt.days) {
+          <button
+            type="button"
+            class="filter-pill"
+            [class.is-active]="selectedDays() === opt.days"
+            [attr.data-analytics-days]="opt.days"
+            (click)="onSelectDays(opt.days)"
+          >
+            {{ opt.label }}
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  @if (errorMessage()) {
+    <div class="status-banner error" role="alert" data-analytics-error>
+      <span class="material-symbols-outlined" aria-hidden="true">error</span>
+      <span class="banner-text">{{ errorMessage() }}</span>
+      <button type="button" class="banner-btn" (click)="loadInsights()">Retry</button>
+    </div>
+  }
+
+  @if (loading() && !insights()) {
+    <section class="analytics-card loading-box" role="status" data-analytics-loading>
+      <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+      <span>Aggregating collected European engineering market metrics...</span>
+    </section>
+  } @else if (insights(); as data) {
+    <div class="disclaimer-banner" role="note" data-analytics-disclaimer>
+      <span class="material-symbols-outlined" aria-hidden="true">info</span>
+      <p>{{ data.dataCoverageDisclaimer }}</p>
+    </div>
+
+    <section class="kpi-grid" aria-label="Aggregated market totals">
+      <article class="kpi-card">
+        <span class="kpi-label">Active Collected Roles</span>
+        <strong class="kpi-value" data-analytics-total-jobs>{{ data.totals.totalActiveJobs }}</strong>
+        <span class="kpi-subtext">
+          {{ data.totals.remoteJobs }} remote · {{ data.totals.hybridJobs }} hybrid · {{ data.totals.onsiteJobs }} onsite
+        </span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Angular &amp; Frontend Demand</span>
+        <strong class="kpi-value">{{ data.totals.angularJobs }} Angular</strong>
+        <span class="kpi-subtext">{{ data.totals.frontendJobs }} total frontend positions</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Java &amp; Full-Stack Demand</span>
+        <strong class="kpi-value">{{ data.totals.javaJobs }} Java</strong>
+        <span class="kpi-subtext">{{ data.totals.fullStackJobs }} full-stack positions</span>
+      </article>
+
+      <article class="kpi-card">
+        <span class="kpi-label">Sponsorship &amp; English Clarity</span>
+        <strong class="kpi-value">{{ data.totals.sponsorshipOpportunities }} Sponsor Ops</strong>
+        <span class="kpi-subtext is-accent">
+          {{ data.totals.verifiedSponsorJobs }} verified sponsors · {{ data.totals.englishConfirmedJobs }} English-confirmed
+        </span>
+      </article>
+    </section>
+
+    @if (data.countryComparisons.length === 0) {
+      <section class="analytics-card empty-box" data-analytics-empty>
+        <strong>No active listings match the selected countries yet.</strong>
+        <p>
+          Try clearing country filters above or check connected feeds on
+          <a routerLink="/jobs" class="inline-link">Discover Jobs</a>.
+        </p>
+      </section>
+    } @else {
+      <div class="charts-grid">
+        <section class="analytics-card">
+          <div class="card-head">
+            <div>
+              <h2>Country Volume &amp; Visa Opportunity Comparison</h2>
+              <p>Collected active postings, tech stack footprint, and sponsor availability by country.</p>
+            </div>
+          </div>
+
+          <div class="bar-chart-list" data-analytics-country-bars>
+            @for (row of data.countryComparisons; track row.country) {
+              <div class="bar-row">
+                <div class="bar-row-meta">
+                  <strong>{{ row.country }}</strong>
+                  <span>
+                    {{ row.totalJobs }} jobs · {{ row.sponsorshipOpportunities }} sponsor ·
+                    {{ row.verifiedSponsorJobs }} verified
+                  </span>
+                </div>
+                <div class="bar-track" role="img" [attr.aria-label]="row.country + ' total jobs ' + row.totalJobs">
+                  <div class="bar-fill is-total" [style.width.%]="barPercent(row.totalJobs)"></div>
+                </div>
+                <div class="bar-subchips">
+                  <span class="mini-tag">Angular: {{ row.angularJobs }}</span>
+                  <span class="mini-tag">Frontend: {{ row.frontendJobs }}</span>
+                  <span class="mini-tag">Java: {{ row.javaJobs }}</span>
+                  <span class="mini-tag">Full-Stack: {{ row.fullStackJobs }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="analytics-card">
+          <div class="card-head">
+            <div>
+              <h2>Discovery Trend ({{ data.trendWindowDays }} Days)</h2>
+              <p>Daily posting cadence across collected sources.</p>
+            </div>
+            <div class="legend-row">
+              <span class="legend-item"><i class="dot is-total"></i> Total</span>
+              <span class="legend-item"><i class="dot is-stack"></i> Angular+Java</span>
+              <span class="legend-item"><i class="dot is-sponsor"></i> Sponsorship</span>
+            </div>
+          </div>
+
+          @let chart = trendChartData();
+          @if (chart.points.length > 0) {
+            <div class="trend-svg-wrap" data-analytics-trend-chart>
+              <svg viewBox="0 0 640 180" class="trend-svg" role="img" aria-label="Job discovery trend line chart">
+                <line x1="22" y1="162" x2="618" y2="162" class="chart-axis" />
+                <line x1="22" y1="90" x2="618" y2="90" class="chart-grid" />
+                <line x1="22" y1="18" x2="618" y2="18" class="chart-grid" />
+                <path [attr.d]="chart.totalPath" class="line-total" />
+                <path [attr.d]="chart.stackPath" class="line-stack" />
+                <path [attr.d]="chart.sponsorPath" class="line-sponsor" />
+                @for (pt of chart.points; track pt.date) {
+                  <circle [attr.cx]="pt.x" [attr.cy]="pt.yTotal" r="3" class="point-total">
+                    <title>{{ pt.date }}: {{ pt.totalDiscovered }} total ({{ pt.sponsorshipDiscovered }} sponsor)</title>
+                  </circle>
+                }
+              </svg>
+              <div class="trend-axis-labels">
+                <span>{{ chart.points[0].shortDate }}</span>
+                <span>Peak: {{ chart.maxValue }} roles/day</span>
+                <span>{{ chart.points[chart.points.length - 1].shortDate }}</span>
+              </div>
+            </div>
+          } @else {
+            <p class="empty-note">No dated postings within the selected window.</p>
+          }
+        </section>
+      </div>
+
+      <section class="analytics-card">
+        <div class="card-head">
+          <div>
+            <h2>Detailed European Market Comparison</h2>
+            <p>
+              Language classifications strictly reflect posting evidence (`Confirmed`, `Local Required`, or
+              `Unspecified`). Normalized annual salary bounds show sample size (`n`).
+            </p>
+          </div>
+        </div>
+
+        <div class="table-scroll">
+          <table class="market-table" data-analytics-country-table>
+            <thead>
+              <tr>
+                <th>Country</th>
+                <th>Jobs</th>
+                <th>Angular / FE</th>
+                <th>Java / FS</th>
+                <th>Sponsorship (Verified)</th>
+                <th>English Language Evidence</th>
+                <th>Work Arrangement</th>
+                <th>Normalized Annual Salary</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of data.countryComparisons; track row.country) {
+                <tr [attr.data-country-row]="row.country">
+                  <td><strong>{{ row.country }}</strong></td>
+                  <td>{{ row.totalJobs }}</td>
+                  <td>{{ row.angularJobs }} / {{ row.frontendJobs }}</td>
+                  <td>{{ row.javaJobs }} / {{ row.fullStackJobs }}</td>
+                  <td>
+                    <span class="sponsor-cell">
+                      {{ row.sponsorshipOpportunities }}
+                      <small>({{ row.verifiedSponsorJobs }} verified)</small>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="lang-cell">
+                      {{ row.englishConfirmedJobs }} confirmed ·
+                      {{ row.localLanguageRequiredJobs }} local ·
+                      {{ row.languageUnspecifiedJobs }} unspec.
+                    </span>
+                  </td>
+                  <td>{{ row.remoteJobs }}R / {{ row.hybridJobs }}H / {{ row.onsiteJobs }}O</td>
+                  <td>
+                    <span>{{ formatSalaryRange(row) }}</span>
+                    @if (row.salarySampleCount > 0) {
+                      <small class="sample-note"> (n={{ row.salarySampleCount }})</small>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    <section class="analytics-card" data-analytics-sources>
+      <div class="card-head">
+        <div>
+          <h2>Connector Source Coverage &amp; Refresh Telemetry</h2>
+          <p>Distribution of active jobs across integrated European job connectors.</p>
+        </div>
+      </div>
+
+      @if (data.sourceCoverage.length === 0) {
+        <p class="empty-note">No active connector telemetry recorded yet.</p>
+      } @else {
+        <div class="sources-grid">
+          @for (src of data.sourceCoverage; track src.sourceProvider) {
+            <article class="source-card">
+              <div class="source-top">
+                <strong>{{ src.sourceProvider }}</strong>
+                <span class="share-pill">{{ src.sharePercentage | number: '1.0-1' }}%</span>
+              </div>
+              <div class="source-meta">
+                <span>{{ src.activeJobsCount }} active roles</span>
+                <span>{{ src.totalRunsLogged }} runs logged</span>
+              </div>
+              <div class="source-foot">
+                <span>Status: {{ src.lastFetchStatus ?? 'UNKNOWN' }}</span>
+                @if (src.lastFetchAt) {
+                  <span>{{ src.lastFetchAt | date: 'short' }}</span>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  }
+</div>
+
