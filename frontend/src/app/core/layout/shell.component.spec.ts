@@ -19,7 +19,7 @@ describe('ShellComponent & Layout Navigation Integration', () => {
 
   beforeEach(async () => {
     localStorage.removeItem(SIDEBAR_COLLAPSE_STORAGE_KEY);
-    localStorage.removeItem(THEME_STORAGE_KEY);
+    localStorage.setItem(THEME_STORAGE_KEY, 'light');
     localStorage.removeItem(SESSION_HINT_STORAGE_KEY);
     sessionStorage.removeItem(SESSION_HINT_STORAGE_KEY);
     document.documentElement.removeAttribute('data-theme');
@@ -52,7 +52,7 @@ describe('ShellComponent & Layout Navigation Integration', () => {
   afterEach(() => {
     httpMock.verify();
     localStorage.removeItem(SIDEBAR_COLLAPSE_STORAGE_KEY);
-    localStorage.removeItem(THEME_STORAGE_KEY);
+    localStorage.setItem(THEME_STORAGE_KEY, 'light');
     localStorage.removeItem(SESSION_HINT_STORAGE_KEY);
     sessionStorage.removeItem(SESSION_HINT_STORAGE_KEY);
     document.documentElement.removeAttribute('data-theme');

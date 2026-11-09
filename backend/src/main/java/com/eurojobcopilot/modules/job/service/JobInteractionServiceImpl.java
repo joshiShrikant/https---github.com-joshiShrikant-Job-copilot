@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -44,7 +45,7 @@ public class JobInteractionServiceImpl implements JobInteractionService {
         UserJobInteraction interaction = findOrCreateInteraction(user, job);
         if (!interaction.isSaved()) {
             interaction.setSaved(true);
-            interaction.setSavedAt(Instant.now());
+            interaction.setSavedAt(Instant.now().truncatedTo(ChronoUnit.SECONDS));
             interaction = persistInteraction(interaction);
             log.info("User uuid={} saved jobId={}", user.getUuid(), jobId);
         }
@@ -81,7 +82,7 @@ public class JobInteractionServiceImpl implements JobInteractionService {
         UserJobInteraction interaction = findOrCreateInteraction(user, job);
         if (!interaction.isInterested()) {
             interaction.setInterested(true);
-            interaction.setInterestedAt(Instant.now());
+            interaction.setInterestedAt(Instant.now().truncatedTo(ChronoUnit.SECONDS));
             interaction = persistInteraction(interaction);
             log.info("User uuid={} marked interested on jobId={}", user.getUuid(), jobId);
         }
@@ -118,7 +119,7 @@ public class JobInteractionServiceImpl implements JobInteractionService {
         UserJobInteraction interaction = findOrCreateInteraction(user, job);
         if (!interaction.isHidden()) {
             interaction.setHidden(true);
-            interaction.setHiddenAt(Instant.now());
+            interaction.setHiddenAt(Instant.now().truncatedTo(ChronoUnit.SECONDS));
             interaction = persistInteraction(interaction);
             log.info("User uuid={} hid jobId={}", user.getUuid(), jobId);
         }
@@ -157,7 +158,7 @@ public class JobInteractionServiceImpl implements JobInteractionService {
         Job job = requireJob(jobId);
 
         String targetUrl = resolveSafeExternalUrl(job);
-        Instant now = Instant.now();
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 
         UserJobInteraction interaction = findOrCreateInteraction(user, job);
         interaction.setRedirectClickedAt(now);

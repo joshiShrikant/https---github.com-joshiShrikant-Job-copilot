@@ -45,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URI;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -330,7 +331,7 @@ public class CompanyDirectoryServiceImpl implements CompanyDirectoryService {
                     .company(company)
                     .priorityTier(tier)
                     .notes(normalizedNotes)
-                    .savedAt(Instant.now())
+                    .savedAt(Instant.now().truncatedTo(ChronoUnit.SECONDS))
                     .build());
         }
 

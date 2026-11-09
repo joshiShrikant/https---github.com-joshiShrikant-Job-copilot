@@ -5,7 +5,7 @@ import { AuthLayoutComponent } from './auth-layout.component';
 
 describe('AuthLayoutComponent', () => {
   beforeEach(async () => {
-    localStorage.removeItem(THEME_STORAGE_KEY);
+    localStorage.setItem(THEME_STORAGE_KEY, 'light');
     document.documentElement.removeAttribute('data-theme');
 
     await TestBed.configureTestingModule({

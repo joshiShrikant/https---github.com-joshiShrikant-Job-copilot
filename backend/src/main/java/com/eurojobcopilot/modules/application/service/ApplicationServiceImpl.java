@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -505,7 +506,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                         .build());
 
         boolean dirty = interaction.getId() == null;
-        Instant now = Instant.now();
+        Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 
         if (status == ApplicationStatus.SAVED && !interaction.isSaved()) {
             interaction.setSaved(true);
