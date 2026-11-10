@@ -157,6 +157,8 @@
 }
 
 .kpi-card {
+  position: relative;
+  overflow: hidden;
   background-color: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -165,6 +167,34 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  animation: ejcCardRise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-brand);
+  }
+
+  &:nth-child(2)::before {
+    background: var(--gradient-violet);
+  }
+  &:nth-child(3)::before {
+    background: var(--gradient-emerald);
+  }
+  &:nth-child(4)::before {
+    background: var(--gradient-amber);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-brand-border);
+  }
 }
 
 .kpi-label {
@@ -225,6 +255,23 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  --bar-gradient: var(--gradient-brand);
+
+  &:nth-child(2) {
+    --bar-gradient: var(--gradient-violet);
+  }
+  &:nth-child(3) {
+    --bar-gradient: var(--gradient-emerald);
+  }
+  &:nth-child(4) {
+    --bar-gradient: var(--gradient-cyan);
+  }
+  &:nth-child(5) {
+    --bar-gradient: var(--gradient-amber);
+  }
+  &:nth-child(6) {
+    --bar-gradient: var(--gradient-rose);
+  }
 }
 
 .bar-row-meta {
@@ -240,7 +287,7 @@
 }
 
 .bar-track {
-  height: 9px;
+  height: 10px;
   border-radius: 9999px;
   background-color: var(--color-bg-subtle);
   overflow: hidden;
@@ -249,7 +296,9 @@
 .bar-fill.is-total {
   height: 100%;
   border-radius: 9999px;
-  background-color: var(--color-brand-primary);
+  background: var(--bar-gradient);
+  transform-origin: left;
+  animation: ejcBarGrow 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .bar-subchips {

@@ -26,9 +26,10 @@
   }
 
   &.is-autopilot {
-    background-color: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.3);
-    color: var(--color-success);
+    background-color: var(--color-success-soft);
+    border-color: var(--color-success-border);
+    color: var(--color-success-text);
+    animation: ejcPulseRing 2.6s ease-in-out infinite;
   }
 }
 
@@ -69,7 +70,7 @@
   }
 
   &.is-active {
-    background-color: var(--color-brand-soft);
+    background: linear-gradient(135deg, var(--color-brand-soft), var(--color-violet-soft));
     border-color: var(--color-brand-border);
     color: var(--color-brand-primary);
   }

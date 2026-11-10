@@ -116,11 +116,11 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 9999px;
-  background-color: var(--color-bg-subtle);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-indigo-soft);
+  border: 1px solid var(--color-indigo-border);
   font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
+  font-weight: 600;
+  color: var(--color-indigo-text);
 }
 
 .chip-remove {
@@ -216,12 +216,14 @@
 }
 
 .btn-primary {
-  background-color: var(--color-brand-primary);
-  border: 1px solid var(--color-brand-primary);
+  background: var(--gradient-primary-btn);
+  border: 1px solid transparent;
   color: #ffffff;
+  box-shadow: 0 3px 10px -2px rgba(37, 99, 235, 0.35);
 
   &:hover:not(:disabled) {
-    background-color: var(--color-brand-primary-hover);
+    background: var(--gradient-primary-btn-hover);
+    transform: translateY(-1px);
   }
 }
 
@@ -261,15 +263,15 @@
   }
 
   &.error {
-    background-color: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.28);
-    color: var(--color-danger);
+    background-color: var(--color-danger-soft);
+    border: 1px solid var(--color-danger-border);
+    color: var(--color-danger-text);
   }
 
   &.success {
-    background-color: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    color: var(--color-success);
+    background-color: var(--color-success-soft);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success-text);
   }
 
   &.info {

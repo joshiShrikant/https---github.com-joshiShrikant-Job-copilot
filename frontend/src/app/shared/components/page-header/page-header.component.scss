@@ -17,19 +17,25 @@
 }
 
 .header-icon-box {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-md);
-  background-color: var(--color-brand-soft);
+  background: linear-gradient(135deg, var(--color-brand-soft), var(--color-violet-soft));
   border: 1px solid var(--color-brand-border);
   color: var(--color-brand-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 
   .material-symbols-outlined {
     font-size: 22px;
+  }
+
+  &:hover {
+    transform: scale(1.06) rotate(-3deg);
   }
 }
 

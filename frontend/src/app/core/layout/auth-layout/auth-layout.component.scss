@@ -1,13 +1,47 @@
 .auth-page-shell {
+  position: relative;
+  overflow: hidden;
   min-height: 100vh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background:
-    radial-gradient(circle at top right, var(--color-brand-soft) 0%, transparent 45%),
-    radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.08) 0%, transparent 45%),
-    var(--color-bg-canvas);
+  background-color: var(--color-bg-canvas);
+  background-image: var(--bg-mesh-app);
   color: var(--color-text-primary);
+  transition: background-color 0.24s ease, color 0.24s ease;
+}
+
+.ambient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  pointer-events: none;
+  z-index: 0;
+  animation: ejcFloatOrb 14s ease-in-out infinite alternate;
+}
+
+.orb-indigo {
+  width: 360px;
+  height: 360px;
+  top: -110px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.22), transparent 70%);
+}
+
+.orb-cyan {
+  width: 340px;
+  height: 340px;
+  bottom: -100px;
+  left: -80px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.2), transparent 70%);
+  animation-delay: -6s;
+}
+
+.auth-topbar,
+.auth-main,
+.auth-footer {
+  position: relative;
+  z-index: 1;
 }
 
 .auth-topbar {
@@ -30,14 +64,15 @@
 }
 
 .brand-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-accent));
+  background: var(--gradient-brand);
   color: #ffffff;
+  box-shadow: var(--shadow-glow-brand);
 
   .material-symbols-outlined {
     font-size: 19px;
@@ -46,12 +81,15 @@
 
 .brand-wordmark {
   font-size: 1.05rem;
-  font-weight: 700;
+  font-weight: 750;
   letter-spacing: -0.025em;
 }
 
 .brand-accent {
-  color: var(--color-brand-primary);
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin-left: 2px;
 }
 
@@ -73,12 +111,13 @@
   color: var(--color-text-secondary);
   font-size: 0.82rem;
   font-weight: 500;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 
   &:hover {
     background-color: var(--color-bg-subtle);
     color: var(--color-text-primary);
     border-color: var(--color-border-strong);
+    transform: translateY(-1px);
   }
 
   .material-symbols-outlined {
@@ -86,26 +125,45 @@
   }
 }
 
-.theme-toggle-btn {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-sm);
+.theme-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
   border: 1px solid var(--color-border);
   background-color: var(--color-bg-surface);
-  color: var(--color-text-secondary);
+}
+
+.theme-seg-btn {
+  width: 28px;
+  height: 26px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-
-  &:hover {
-    background-color: var(--color-bg-subtle);
-    color: var(--color-text-primary);
-    border-color: var(--color-border-strong);
-  }
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.15s ease;
 
   .material-symbols-outlined {
-    font-size: 19px;
+    font-size: 16px;
+  }
+
+  &:hover:not(.is-active) {
+    background-color: var(--color-bg-subtle);
+    color: var(--color-text-primary);
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &.is-active {
+    background: var(--gradient-primary-btn);
+    color: #ffffff;
+    box-shadow: 0 2px 8px -1px rgba(37, 99, 235, 0.42);
   }
 }
 
@@ -118,13 +176,26 @@
 }
 
 .auth-card {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   max-width: 456px;
   background-color: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 32px;
+  padding: 34px 32px 32px;
   box-shadow: var(--shadow-lg);
+  animation: ejcCardRise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-brand);
+  }
 }
 
 .auth-footer {
@@ -140,8 +211,7 @@
   }
 
   .auth-card {
-    padding: 24px 20px;
+    padding: 26px 20px 24px;
     border-radius: var(--radius-md);
   }
 }
-

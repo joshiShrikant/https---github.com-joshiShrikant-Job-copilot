@@ -45,7 +45,7 @@
 
   <nav class="sidebar-nav" aria-label="Application sections">
     @for (group of navGroups(); track group.id; let isFirstGroup = $first) {
-      <div class="nav-group" [class.has-divider]="!isFirstGroup">
+      <div class="nav-group" [class.has-divider]="!isFirstGroup" [attr.data-nav-group]="group.id">
         @if (!collapsed() || isMobileViewport()) {
           <div class="nav-group-label">{{ group.label }}</div>
         }
@@ -74,19 +74,57 @@
   </nav>
 
   <div class="sidebar-footer">
-    <button
-      type="button"
-      class="theme-switch-btn"
-      (click)="themeToggle.emit()"
-      [attr.aria-label]="isDarkMode() ? 'Switch to light theme' : 'Switch to dark theme'"
-      [attr.title]="collapsed() && !isMobileViewport() ? (isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode') : null"
-    >
-      <span class="material-symbols-outlined footer-icon" aria-hidden="true">
-        {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
-      </span>
-      @if (!collapsed() || isMobileViewport()) {
-        <span class="footer-label">{{ isDarkMode() ? 'Light Mode' : 'Dark Mode' }}</span>
-      }
-    </button>
+    @if (!collapsed() || isMobileViewport()) {
+      <div class="sidebar-theme-switcher" role="group" aria-label="Sidebar color theme">
+        <button
+          type="button"
+          class="sidebar-theme-pill"
+          data-sidebar-theme="system"
+          [class.is-active]="themeMode() === 'system'"
+          [attr.aria-pressed]="themeMode() === 'system'"
+          (click)="themeSelect.emit('system')"
+          [attr.title]="'System (' + (systemTheme() === 'dark' ? 'Dark' : 'Light') + ')'"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">desktop_windows</span>
+          <span>Auto</span>
+        </button>
+        <button
+          type="button"
+          class="sidebar-theme-pill"
+          data-sidebar-theme="light"
+          [class.is-active]="themeMode() === 'light'"
+          [attr.aria-pressed]="themeMode() === 'light'"
+          (click)="themeSelect.emit('light')"
+          title="Light theme"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
+          <span>Light</span>
+        </button>
+        <button
+          type="button"
+          class="sidebar-theme-pill"
+          data-sidebar-theme="dark"
+          [class.is-active]="themeMode() === 'dark'"
+          [attr.aria-pressed]="themeMode() === 'dark'"
+          (click)="themeSelect.emit('dark')"
+          title="Dark theme"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
+          <span>Dark</span>
+        </button>
+      </div>
+    } @else {
+      <button
+        type="button"
+        class="theme-switch-btn"
+        (click)="themeToggle.emit()"
+        [attr.aria-label]="'Cycle color theme (current: ' + themeMode() + ')'"
+        [attr.title]="'Theme: ' + (themeMode() === 'system' ? 'System (' + systemTheme() + ')' : themeMode()) + ' · Click to switch'"
+      >
+        <span class="material-symbols-outlined footer-icon" aria-hidden="true">
+          {{ themeMode() === 'system' ? 'desktop_windows' : isDarkMode() ? 'dark_mode' : 'light_mode' }}
+        </span>
+      </button>
+    }
   </div>
 </aside>

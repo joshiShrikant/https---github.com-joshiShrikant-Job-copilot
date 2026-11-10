@@ -12,6 +12,7 @@
   line-height: 1.25;
   white-space: nowrap;
   letter-spacing: -0.005em;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 
   .badge-icon {
     font-size: 14px;
@@ -29,27 +30,27 @@
   }
 
   &.tone-success {
-    background-color: rgba(16, 185, 129, 0.12);
-    border-color: rgba(16, 185, 129, 0.32);
-    color: var(--color-success);
+    background-color: var(--color-success-soft);
+    border-color: var(--color-success-border);
+    color: var(--color-success-text);
   }
 
   &.tone-brand {
-    background-color: var(--color-brand-soft);
+    background: linear-gradient(135deg, var(--color-brand-soft), var(--color-violet-soft));
     border-color: var(--color-brand-border);
     color: var(--color-brand-primary);
   }
 
   &.tone-warning {
-    background-color: rgba(245, 158, 11, 0.12);
-    border-color: rgba(245, 158, 11, 0.34);
-    color: #d97706;
+    background-color: var(--color-warning-soft);
+    border-color: var(--color-warning-border);
+    color: var(--color-warning-text);
   }
 
   &.tone-danger {
-    background-color: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.3);
-    color: var(--color-danger);
+    background-color: var(--color-danger-soft);
+    border-color: var(--color-danger-border);
+    color: var(--color-danger-text);
   }
 
   &.tone-neutral {
@@ -58,8 +59,3 @@
     color: var(--color-text-secondary);
   }
 }
-
-:host-context([data-theme='dark']) .status-badge.tone-warning {
-  color: var(--color-warning);
-}
-

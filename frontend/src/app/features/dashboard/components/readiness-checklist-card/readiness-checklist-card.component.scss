@@ -14,14 +14,14 @@
   color: var(--color-text-secondary);
 
   strong {
-    font-weight: 700;
-    color: var(--color-text-primary);
+    font-weight: 750;
+    color: var(--color-brand-primary);
   }
 }
 
 .progress-track {
   width: 100%;
-  height: 7px;
+  height: 9px;
   border-radius: 9999px;
   background-color: var(--color-bg-subtle);
   overflow: hidden;
@@ -30,8 +30,10 @@
 .progress-fill {
   height: 100%;
   border-radius: 9999px;
-  background-color: var(--color-brand-primary);
-  transition: width 0.25s ease;
+  background: var(--gradient-brand);
+  transform-origin: left;
+  animation: ejcBarGrow 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: width 0.35s ease;
 }
 
 .checklist {
@@ -51,10 +53,19 @@
   border: 1px solid var(--color-border);
   background-color: var(--color-bg-canvas);
   flex-wrap: wrap;
+  transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+
+  &:hover {
+    border-color: var(--color-brand-border);
+    transform: translateX(2px);
+  }
 
   &.is-done {
+    border-color: var(--color-success-border);
+    background-color: color-mix(in srgb, var(--color-success-soft) 55%, var(--color-bg-canvas));
+
     .check-icon {
-      color: var(--color-success);
+      color: var(--color-success-text);
     }
   }
 }
@@ -92,4 +103,3 @@
     line-height: 1.4;
   }
 }
-

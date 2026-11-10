@@ -2,7 +2,10 @@
   position: fixed;
   inset: 0;
   background: var(--color-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 60;
+  animation: ejcFadeIn 0.2s ease both;
 }
 
 .detail-drawer {
@@ -17,6 +20,7 @@
   z-index: 65;
   display: flex;
   flex-direction: column;
+  animation: ejcDrawerIn 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .drawer-head {

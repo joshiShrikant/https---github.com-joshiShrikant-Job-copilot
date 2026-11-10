@@ -10,6 +10,7 @@ import {
   signal
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ResolvedTheme, ThemeMode } from '../../services/theme.service';
 
 @Component({
   selector: 'app-user-menu',
@@ -25,8 +26,11 @@ export class UserMenuComponent {
   readonly displayName = input<string>('Workspace Guest');
   readonly secondaryLabel = input<string>('Not signed in');
   readonly isAuthenticated = input<boolean>(false);
+  readonly themeMode = input<ThemeMode>('system');
+  readonly systemTheme = input<ResolvedTheme>('light');
   readonly isDarkMode = input<boolean>(false);
 
+  readonly themeSelect = output<ThemeMode>();
   readonly themeToggle = output<void>();
   readonly logoutRequested = output<void>();
 
@@ -51,8 +55,8 @@ export class UserMenuComponent {
     this.isOpen.set(false);
   }
 
-  onThemeToggleClick(): void {
-    this.themeToggle.emit();
+  onThemeSelectClick(mode: ThemeMode): void {
+    this.themeSelect.emit(mode);
     this.closeMenu();
   }
 

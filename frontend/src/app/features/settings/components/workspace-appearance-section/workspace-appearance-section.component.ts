@@ -64,16 +64,31 @@ export class WorkspaceAppearanceSectionComponent {
   readonly statusMessage = signal<string | null>(null);
 
   readonly activeTheme = this.themeService.theme;
+  readonly resolvedTheme = this.themeService.resolvedTheme;
+  readonly systemTheme = this.themeService.systemTheme;
   readonly workspacePrefs = this.preferencesService.workspacePrefs;
   readonly isSidebarCollapsed = this.layoutService.isSidebarCollapsed;
   readonly activeDensity = computed(() => this.workspacePrefs().density);
   readonly activeCadence = computed(() => this.workspacePrefs().alertCadence);
 
+  readonly themeStatusLabel = computed(() => {
+    const mode = this.activeTheme();
+    if (mode === 'system') {
+      return `System (${this.systemTheme() === 'dark' ? 'Dark' : 'Light'})`;
+    }
+    return mode === 'dark' ? 'Dark Mode' : 'Light Mode';
+  });
+
   selectTheme(mode: ThemeMode): void {
     this.themeService.setTheme(mode);
-    this.statusMessage.set(
-      mode === 'dark' ? 'Dark workspace theme activated.' : 'Light workspace theme activated.'
-    );
+    if (mode === 'system') {
+      const osMode = this.systemTheme() === 'dark' ? 'dark' : 'light';
+      this.statusMessage.set(`Workspace theme synced to system preference (currently ${osMode}).`);
+    } else if (mode === 'dark') {
+      this.statusMessage.set('Dark workspace theme activated.');
+    } else {
+      this.statusMessage.set('Light workspace theme activated.');
+    }
   }
 
   onSidebarCollapseToggle(event: Event): void {
@@ -100,4 +115,3 @@ export class WorkspaceAppearanceSectionComponent {
     this.statusMessage.set(`Alert digest cadence updated to ${cadence.toLowerCase()}.`);
   }
 }
-

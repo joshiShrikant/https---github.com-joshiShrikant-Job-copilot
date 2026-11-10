@@ -194,7 +194,7 @@ describe('SettingsComponent', () => {
     expect(host.querySelector('.header-status-pill')?.textContent).toContain('80% match');
   });
 
-  it('should switch to Workspace Appearance tab and update theme, density, sidebar collapse, and alert cadence', () => {
+  it('should switch to Workspace Appearance tab and update theme (including system), density, sidebar collapse, and alert cadence', () => {
     createAndFlushInitialLoad();
     const host = fixture.nativeElement as HTMLElement;
 
@@ -211,14 +211,26 @@ describe('SettingsComponent', () => {
     fixture.detectChanges();
     TestBed.flushEffects();
 
+    expect(themeService.theme()).toBe('dark');
     expect(themeService.isDarkMode()).toBeTrue();
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme-mode')).toBe('dark');
+    expect(host.querySelector('[data-theme-active-badge]')?.textContent).toContain('Dark Mode');
     expect(document.documentElement.getAttribute('data-density')).toBe('compact');
     expect(layoutService.isSidebarCollapsed()).toBeTrue();
     expect(JSON.parse(localStorage.getItem(WORKSPACE_PREFS_STORAGE_KEY) ?? '{}')).toEqual({
       alertCadence: 'INSTANT',
       density: 'COMPACT'
     });
+
+    host.querySelector<HTMLButtonElement>('[data-theme-choice="system"]')?.click();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(themeService.theme()).toBe('system');
+    expect(themeService.isSystemTheme()).toBeTrue();
+    expect(document.documentElement.getAttribute('data-theme-mode')).toBe('system');
+    expect(host.querySelector('[data-theme-active-badge]')?.textContent).toContain('System');
   });
 
   it('should display account summary and handle two-step Sign Out All Devices via AuthService', () => {

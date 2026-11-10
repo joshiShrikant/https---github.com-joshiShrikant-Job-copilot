@@ -19,7 +19,9 @@
 }
 
 .kpi-card {
-  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+  padding: 15px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: var(--color-bg-surface);
@@ -27,9 +29,37 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  animation: ejcCardRise 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--gradient-brand);
+  }
+
+  &:nth-child(2)::before {
+    background: var(--gradient-violet);
+  }
+  &:nth-child(3)::before {
+    background: var(--gradient-emerald);
+  }
+  &:nth-child(4)::before {
+    background: var(--gradient-amber);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--color-brand-border);
+  }
 
   &.is-warning {
-    border-color: rgba(245, 158, 11, 0.45);
+    border-color: var(--color-warning-border);
   }
 }
 
@@ -90,9 +120,10 @@
   }
 
   &.is-active {
-    background: var(--color-brand-primary);
-    border-color: var(--color-brand-primary);
+    background: var(--gradient-primary-btn);
+    border-color: transparent;
     color: #ffffff;
+    box-shadow: 0 3px 10px -2px rgba(37, 99, 235, 0.35);
   }
 }
 
@@ -155,15 +186,15 @@
   }
 
   &.is-error {
-    background: rgba(239, 68, 68, 0.12);
-    border: 1px solid rgba(239, 68, 68, 0.35);
-    color: var(--color-danger);
+    background: var(--color-danger-soft);
+    border: 1px solid var(--color-danger-border);
+    color: var(--color-danger-text);
   }
 
   &.is-success {
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    color: #047857;
+    background: var(--color-success-soft);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success-text);
   }
 }
 
@@ -180,7 +211,10 @@
   position: fixed;
   inset: 0;
   background: var(--color-scrim);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 70;
+  animation: ejcFadeIn 0.18s ease both;
 }
 
 .create-modal {
@@ -197,6 +231,7 @@
   z-index: 75;
   display: flex;
   flex-direction: column;
+  animation: ejcModalEnter 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .modal-head,

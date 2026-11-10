@@ -381,7 +381,7 @@ describe('ShellComponent & Layout Navigation Integration', () => {
     expect(fixture.componentInstance.layout.isMobileDrawerOpen()).toBeFalse();
   });
 
-  it('should open guest user menu popover and toggle dark theme cleanly', () => {
+  it('should open guest user menu popover and switch between dark, light, and system themes cleanly', () => {
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();
 
@@ -402,16 +402,30 @@ describe('ShellComponent & Layout Navigation Integration', () => {
       'Create account'
     );
 
-    const themeMenuBtn = host.querySelector<HTMLButtonElement>('.user-dropdown .theme-menu-btn');
-    expect(themeMenuBtn?.textContent).toContain('Switch to Dark Mode');
+    const darkMenuPill = host.querySelector<HTMLButtonElement>(
+      '.user-dropdown [data-theme-option="dark"]'
+    );
+    expect(darkMenuPill?.textContent).toContain('Dark');
+    expect(
+      host.querySelector('.user-dropdown [data-theme-option="system"]')?.textContent
+    ).toContain('System');
 
-    themeMenuBtn?.click();
+    darkMenuPill?.click();
     fixture.detectChanges();
     TestBed.flushEffects();
 
+    expect(fixture.componentInstance.theme.theme()).toBe('dark');
     expect(fixture.componentInstance.theme.isDarkMode()).toBeTrue();
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme-mode')).toBe('dark');
     expect(host.querySelector('.user-dropdown')).toBeNull();
+
+    host.querySelector<HTMLButtonElement>('app-header [data-theme-option="system"]')?.click();
+    fixture.detectChanges();
+    TestBed.flushEffects();
+
+    expect(fixture.componentInstance.theme.theme()).toBe('system');
+    expect(document.documentElement.getAttribute('data-theme-mode')).toBe('system');
   });
 
   it('should show authenticated user identity and sign out cleanly via AuthService', () => {

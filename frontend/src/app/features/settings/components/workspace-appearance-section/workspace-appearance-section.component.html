@@ -10,42 +10,79 @@
     <div class="card-head">
       <div>
         <h2>Theme &amp; Visual Appearance</h2>
-        <p>Switch between high-clarity light mode and contrast-tuned dark mode. Changes apply immediately.</p>
+        <p>Follow your operating system appearance automatically or lock Light or Dark mode across every workspace page.</p>
       </div>
-      <span class="badge-pill primary">{{ activeTheme() === 'dark' ? 'Dark Mode' : 'Light Mode' }}</span>
+      <span class="badge-pill primary" data-theme-active-badge>{{ themeStatusLabel() }}</span>
     </div>
 
-    <div class="choice-grid two-col" role="radiogroup" aria-label="Workspace color theme">
+    <div class="choice-grid three-col" role="radiogroup" aria-label="Workspace color theme">
       <button
         type="button"
         role="radio"
-        class="choice-card"
-        data-theme-choice="light"
-        [class.is-selected]="activeTheme() === 'light'"
-        [attr.aria-checked]="activeTheme() === 'light'"
-        (click)="selectTheme('light')"
+        class="choice-card theme-card"
+        data-theme-choice="system"
+        [class.is-selected]="activeTheme() === 'system'"
+        [attr.aria-checked]="activeTheme() === 'system'"
+        (click)="selectTheme('system')"
       >
-        <div class="choice-head">
-          <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
-          <strong>Light Workspace</strong>
+        <div class="theme-preview preview-system" aria-hidden="true">
+          <div class="preview-half is-light">
+            <span class="preview-bar bar-primary"></span>
+            <span class="preview-bar bar-muted"></span>
+          </div>
+          <div class="preview-half is-dark">
+            <span class="preview-bar bar-accent"></span>
+            <span class="preview-bar bar-muted"></span>
+          </div>
         </div>
-        <p>Crisp neutral canvas with high-contrast slate typography for daytime focus.</p>
+        <div class="choice-head">
+          <span class="material-symbols-outlined" aria-hidden="true">desktop_windows</span>
+          <strong>System Default</strong>
+          <span class="mini-os-pill">{{ systemTheme() === 'dark' ? 'OS: Dark' : 'OS: Light' }}</span>
+        </div>
+        <p>Matches your device light or dark schedule automatically in real time.</p>
       </button>
 
       <button
         type="button"
         role="radio"
-        class="choice-card"
+        class="choice-card theme-card"
+        data-theme-choice="light"
+        [class.is-selected]="activeTheme() === 'light'"
+        [attr.aria-checked]="activeTheme() === 'light'"
+        (click)="selectTheme('light')"
+      >
+        <div class="theme-preview preview-light" aria-hidden="true">
+          <span class="preview-dot"></span>
+          <span class="preview-bar bar-primary"></span>
+          <span class="preview-bar bar-accent"></span>
+        </div>
+        <div class="choice-head">
+          <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
+          <strong>Light Workspace</strong>
+        </div>
+        <p>Luminous canvas with colorful indigo-cyan accents for daytime focus.</p>
+      </button>
+
+      <button
+        type="button"
+        role="radio"
+        class="choice-card theme-card"
         data-theme-choice="dark"
         [class.is-selected]="activeTheme() === 'dark'"
         [attr.aria-checked]="activeTheme() === 'dark'"
         (click)="selectTheme('dark')"
       >
+        <div class="theme-preview preview-dark" aria-hidden="true">
+          <span class="preview-dot"></span>
+          <span class="preview-bar bar-primary"></span>
+          <span class="preview-bar bar-accent"></span>
+        </div>
         <div class="choice-head">
           <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
           <strong>Dark Workspace</strong>
         </div>
-        <p>Low-glare midnight surface tuned for extended evening review sessions.</p>
+        <p>Rich midnight canvas with glowing accents for low-glare evening focus.</p>
       </button>
     </div>
   </section>
@@ -122,4 +159,3 @@
     </div>
   </section>
 </div>
-

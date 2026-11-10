@@ -3,7 +3,7 @@
 .funnel-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 11px;
 }
 
 .funnel-row {
@@ -11,11 +11,28 @@
   grid-template-columns: 120px 1fr 34px;
   align-items: center;
   gap: 12px;
+  --stage-gradient: var(--gradient-brand);
+
+  &:nth-child(2) {
+    --stage-gradient: var(--gradient-violet);
+  }
+  &:nth-child(3) {
+    --stage-gradient: var(--gradient-emerald);
+  }
+  &:nth-child(4) {
+    --stage-gradient: var(--gradient-cyan);
+  }
+  &:nth-child(5) {
+    --stage-gradient: var(--gradient-amber);
+  }
+  &:nth-child(6) {
+    --stage-gradient: var(--gradient-rose);
+  }
 }
 
 .stage-label {
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -23,7 +40,7 @@
 }
 
 .stage-bar-track {
-  height: 9px;
+  height: 10px;
   border-radius: 9999px;
   background-color: var(--color-bg-subtle);
   overflow: hidden;
@@ -32,8 +49,10 @@
 .stage-bar-fill {
   height: 100%;
   border-radius: 9999px;
-  background-color: var(--color-brand-primary);
-  transition: width 0.25s ease;
+  background: var(--stage-gradient);
+  transform-origin: left;
+  animation: ejcBarGrow 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: width 0.35s ease;
 }
 
 .stage-count {
@@ -53,4 +72,3 @@
   font-size: 0.78rem;
   color: var(--color-text-muted);
 }
-

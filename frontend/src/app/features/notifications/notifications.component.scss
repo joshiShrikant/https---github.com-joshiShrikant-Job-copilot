@@ -44,9 +44,15 @@
 }
 
 .primary-btn {
-  border: 1px solid var(--color-brand-primary);
-  background-color: var(--color-brand-primary);
+  border: 1px solid transparent;
+  background: var(--gradient-primary-btn);
   color: #ffffff;
+  box-shadow: 0 3px 10px -2px rgba(37, 99, 235, 0.32);
+
+  &:hover:not(:disabled) {
+    background: var(--gradient-primary-btn-hover);
+    transform: translateY(-1px);
+  }
 }
 
 .danger-btn {
@@ -138,10 +144,18 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
   align-items: flex-start;
+  animation: ejcCardRise 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+
+  &:hover {
+    border-color: var(--color-brand-border);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
 
   &.is-unread {
     border-color: var(--color-brand-border);
-    background-color: color-mix(in srgb, var(--color-brand-soft) 36%, var(--color-bg-surface));
+    background-color: color-mix(in srgb, var(--color-brand-soft) 45%, var(--color-bg-surface));
   }
 }
 

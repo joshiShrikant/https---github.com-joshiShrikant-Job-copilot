@@ -420,9 +420,9 @@
 
 .badge-pill.warning-pill,
 .kw-chip.is-missing {
-  background-color: rgba(245, 158, 11, 0.13);
-  border-color: rgba(245, 158, 11, 0.35);
-  color: #b45309;
+  background-color: var(--color-warning-soft);
+  border-color: var(--color-warning-border);
+  color: var(--color-warning-text);
 }
 
 .chip-remove {
@@ -492,14 +492,17 @@
 
 .ats-bar-fill {
   height: 100%;
-  background-color: var(--color-warning);
+  border-radius: 9999px;
+  background: var(--gradient-amber);
+  transform-origin: left;
+  animation: ejcBarGrow 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 
   &.is-mid {
-    background-color: var(--color-brand-primary);
+    background: var(--gradient-brand);
   }
 
   &.is-high {
-    background-color: var(--color-success);
+    background: var(--gradient-emerald);
   }
 }
 

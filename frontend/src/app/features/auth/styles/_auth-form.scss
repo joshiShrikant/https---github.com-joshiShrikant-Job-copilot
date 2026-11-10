@@ -156,7 +156,7 @@
   height: 42px;
   border: none;
   border-radius: var(--radius-sm);
-  background-color: var(--color-brand-primary);
+  background: var(--gradient-primary-btn);
   color: #ffffff;
   font-size: 0.9rem;
   font-weight: 600;
@@ -164,10 +164,16 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  transition: background-color 0.15s ease, opacity 0.15s ease;
+  box-shadow: var(--shadow-glow-brand);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.15s ease;
 
   &:hover:not(:disabled) {
-    background-color: var(--color-brand-primary-hover);
+    background: var(--gradient-primary-btn-hover);
+    transform: translateY(-1px);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.99);
   }
 
   &:disabled {

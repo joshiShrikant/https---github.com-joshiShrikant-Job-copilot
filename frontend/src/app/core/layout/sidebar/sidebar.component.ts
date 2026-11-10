@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ResolvedTheme, ThemeMode } from '../../services/theme.service';
 import { NAV_GROUPS, NavGroup, NavItem } from '../navigation.config';
 
 @Component({
@@ -15,10 +16,13 @@ export class SidebarComponent {
   readonly collapsed = input<boolean>(false);
   readonly mobileOpen = input<boolean>(false);
   readonly isMobileViewport = input<boolean>(false);
+  readonly themeMode = input<ThemeMode>('system');
+  readonly systemTheme = input<ResolvedTheme>('light');
   readonly isDarkMode = input<boolean>(false);
 
   readonly collapseToggle = output<void>();
   readonly mobileClose = output<void>();
+  readonly themeSelect = output<ThemeMode>();
   readonly themeToggle = output<void>();
   readonly itemSelect = output<NavItem>();
 

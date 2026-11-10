@@ -142,14 +142,14 @@
 .urgency-pill {
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(245, 158, 11, 0.16);
-  color: #b45309;
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
   font-size: 0.7rem;
   font-weight: 700;
 
   &.is-overdue {
-    background: rgba(239, 68, 68, 0.14);
-    color: var(--color-danger);
+    background: var(--color-danger-soft);
+    color: var(--color-danger-text);
   }
 }
 
@@ -241,9 +241,9 @@
 
 .verified-chip,
 .safety-badge {
-  background: rgba(16, 185, 129, 0.14);
-  border-color: rgba(16, 185, 129, 0.3);
-  color: #047857;
+  background: var(--color-success-soft);
+  border-color: var(--color-success-border);
+  color: var(--color-success-text);
 }
 
 .outreach-type-grid {
@@ -325,7 +325,7 @@
 
 .warning-notes {
   margin-top: 6px;
-  color: #b45309;
+  color: var(--color-warning-text);
   font-weight: 600;
 }
 
@@ -371,14 +371,14 @@
 }
 
 .status-pill[data-status='SENT'] {
-  background: rgba(16, 185, 129, 0.14);
-  color: #047857;
-  border-color: rgba(16, 185, 129, 0.3);
+  background: var(--color-success-soft);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
 }
 
 .status-pill[data-status='APPROVED'] {
-  background: rgba(245, 158, 11, 0.16);
-  color: #b45309;
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
 }
 
 .history-time {
@@ -414,15 +414,15 @@
   font-weight: 600;
 
   &.is-error {
-    background: rgba(239, 68, 68, 0.12);
-    color: var(--color-danger);
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    background: var(--color-danger-soft);
+    color: var(--color-danger-text);
+    border: 1px solid var(--color-danger-border);
   }
 
   &.is-success {
-    background: rgba(16, 185, 129, 0.12);
-    color: #047857;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    background: var(--color-success-soft);
+    color: var(--color-success-text);
+    border: 1px solid var(--color-success-border);
   }
 }
 

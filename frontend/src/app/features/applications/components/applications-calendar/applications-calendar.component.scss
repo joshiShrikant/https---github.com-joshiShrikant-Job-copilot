@@ -162,14 +162,14 @@
     border-color: var(--color-brand-border);
   }
   &.is-followup {
-    background: rgba(245, 158, 11, 0.14);
-    color: #b45309;
-    border-color: rgba(245, 158, 11, 0.3);
+    background: var(--color-warning-soft);
+    color: var(--color-warning-text);
+    border-color: var(--color-warning-border);
   }
   &.is-recruiter {
-    background: rgba(16, 185, 129, 0.14);
-    color: #047857;
-    border-color: rgba(16, 185, 129, 0.3);
+    background: var(--color-success-soft);
+    color: var(--color-success-text);
+    border-color: var(--color-success-border);
   }
   &.is-applied {
     background: var(--color-bg-subtle);

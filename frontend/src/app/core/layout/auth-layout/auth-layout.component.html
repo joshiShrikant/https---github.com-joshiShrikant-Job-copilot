@@ -1,4 +1,7 @@
 <div class="auth-page-shell">
+  <div class="ambient-orb orb-indigo" aria-hidden="true"></div>
+  <div class="ambient-orb orb-cyan" aria-hidden="true"></div>
+
   <header class="auth-topbar">
     <a routerLink="/dashboard" class="brand-link" aria-label="Return to EuroJob Copilot workspace">
       <span class="brand-mark" aria-hidden="true">
@@ -15,17 +18,44 @@
         <span>Workspace</span>
       </a>
 
-      <button
-        type="button"
-        class="theme-toggle-btn"
-        (click)="theme.toggleTheme()"
-        [attr.aria-label]="theme.isDarkMode() ? 'Switch to light theme' : 'Switch to dark theme'"
-        [attr.title]="theme.isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-      >
-        <span class="material-symbols-outlined" aria-hidden="true">
-          {{ theme.isDarkMode() ? 'light_mode' : 'dark_mode' }}
-        </span>
-      </button>
+      <div class="theme-segmented" role="group" aria-label="Color theme mode">
+        <button
+          type="button"
+          class="theme-seg-btn"
+          data-theme-option="system"
+          [class.is-active]="theme.theme() === 'system'"
+          [attr.aria-pressed]="theme.theme() === 'system'"
+          (click)="theme.setTheme('system')"
+          [attr.title]="'System theme (' + (theme.systemTheme() === 'dark' ? 'Dark' : 'Light') + ')'"
+          aria-label="Use system theme"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">desktop_windows</span>
+        </button>
+        <button
+          type="button"
+          class="theme-seg-btn"
+          data-theme-option="light"
+          [class.is-active]="theme.theme() === 'light'"
+          [attr.aria-pressed]="theme.theme() === 'light'"
+          (click)="theme.setTheme('light')"
+          title="Light mode"
+          aria-label="Switch to light mode"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
+        </button>
+        <button
+          type="button"
+          class="theme-seg-btn"
+          data-theme-option="dark"
+          [class.is-active]="theme.theme() === 'dark'"
+          [attr.aria-pressed]="theme.theme() === 'dark'"
+          (click)="theme.setTheme('dark')"
+          title="Dark mode"
+          aria-label="Switch to dark mode"
+        >
+          <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -39,4 +69,3 @@
     <p>European tech job discovery, visa sponsorship verification, and AI application copilot.</p>
   </footer>
 </div>
-

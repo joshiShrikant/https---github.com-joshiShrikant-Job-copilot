@@ -45,12 +45,15 @@
 
 .primary-link,
 .primary-btn {
-  background-color: var(--color-brand-primary);
-  border-color: var(--color-brand-primary);
+  background: var(--gradient-primary-btn);
+  border-color: transparent;
   color: #ffffff;
+  box-shadow: 0 3px 10px -2px rgba(37, 99, 235, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 
   &:hover:not(:disabled) {
-    background-color: var(--color-brand-primary-hover);
+    background: var(--gradient-primary-btn-hover);
+    transform: translateY(-1px);
   }
 }
 
