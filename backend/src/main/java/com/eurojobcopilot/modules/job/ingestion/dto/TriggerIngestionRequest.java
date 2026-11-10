@@ -12,7 +12,7 @@ import java.util.List;
 @Builder
 @Schema(description = "Optional parameters overriding a manually triggered job ingestion run")
 public record TriggerIngestionRequest(
-        @Schema(description = "Optional single provider name (e.g. ARBEITNOW or ADZUNA); omit to poll all enabled providers", example = "ADZUNA")
+        @Schema(description = "Optional single provider name (e.g. ARBEITNOW, ADZUNA, or JOOBLE); omit to poll all enabled providers", example = "ADZUNA")
         String provider,
 
         @Schema(description = "Optional target European countries filter", example = "[\"Germany\", \"Netherlands\"]")

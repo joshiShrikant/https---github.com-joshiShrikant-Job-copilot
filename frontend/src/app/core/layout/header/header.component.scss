@@ -1,8 +1,8 @@
 .top-header {
   height: var(--header-height);
   background-color: var(--color-header-backdrop);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -13,6 +13,7 @@
   position: sticky;
   top: 0;
   z-index: 20;
+  transition: background-color 0.24s ease, border-color 0.24s ease;
 }
 
 .header-left {
@@ -26,7 +27,7 @@
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   flex-shrink: 0;
 }
 
@@ -40,12 +41,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 
   &:hover {
     background-color: var(--color-bg-subtle);
     color: var(--color-text-primary);
     border-color: var(--color-border);
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    transform: scale(0.95);
   }
 
   .material-symbols-outlined {
@@ -61,18 +67,19 @@
   position: absolute;
   top: -3px;
   right: -4px;
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   border-radius: 9999px;
-  background-color: var(--color-danger);
+  background: var(--gradient-rose);
   color: #ffffff;
   font-size: 0.65rem;
   font-weight: 700;
-  line-height: 17px;
+  line-height: 18px;
   text-align: center;
   border: 1.5px solid var(--color-bg-surface);
   pointer-events: none;
+  animation: ejcBadgePulse 2.6s ease-in-out infinite;
 }
 
 .discover-shortcut {
@@ -80,24 +87,71 @@
   align-items: center;
   gap: 6px;
   height: 34px;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background-color: var(--color-bg-surface);
-  color: var(--color-text-secondary);
-  font-size: 0.82rem;
-  font-weight: 500;
-  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  padding: 0 13px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-brand-border);
+  background: linear-gradient(135deg, var(--color-brand-soft), var(--color-cyan-soft));
+  color: var(--color-text-primary);
+  font-size: 0.81rem;
+  font-weight: 600;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 
   &:hover {
-    background-color: var(--color-bg-subtle);
-    color: var(--color-text-primary);
-    border-color: var(--color-border-strong);
+    transform: translateY(-1px);
+    border-color: var(--color-brand-primary);
+    box-shadow: var(--shadow-sm);
   }
 
   .shortcut-icon {
     font-size: 17px;
     color: var(--color-brand-primary);
+  }
+}
+
+.theme-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg-subtle);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-seg-btn {
+  width: 28px;
+  height: 26px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.16s ease,
+    box-shadow 0.18s ease;
+
+  .material-symbols-outlined {
+    font-size: 16px;
+  }
+
+  &:hover:not(.is-active) {
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-surface);
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &.is-active {
+    background: var(--gradient-primary-btn);
+    color: #ffffff;
+    box-shadow: 0 2px 8px -1px rgba(37, 99, 235, 0.45);
   }
 }
 
@@ -111,7 +165,7 @@
 @media (max-width: 767.98px) {
   .top-header {
     padding: 0 14px;
-    gap: 10px;
+    gap: 8px;
   }
 
   .discover-shortcut,
@@ -119,4 +173,3 @@
     display: none;
   }
 }
-

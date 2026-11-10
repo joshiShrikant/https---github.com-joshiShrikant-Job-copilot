@@ -11,10 +11,13 @@
     [collapsed]="layout.isSidebarCollapsed()"
     [mobileOpen]="layout.isMobileDrawerOpen()"
     [isMobileViewport]="layout.isMobileOrTablet()"
+    [themeMode]="theme.theme()"
+    [systemTheme]="theme.systemTheme()"
     [isDarkMode]="theme.isDarkMode()"
     (collapseToggle)="layout.toggleSidebarCollapse()"
     (mobileClose)="layout.closeMobileDrawer()"
-    (themeToggle)="theme.toggleTheme()"
+    (themeSelect)="theme.setTheme($event)"
+    (themeToggle)="theme.cycleTheme()"
   />
 
   @if (layout.isMobileOrTablet() && layout.isMobileDrawerOpen()) {
@@ -31,6 +34,8 @@
       [showMobileMenuButton]="layout.isMobileOrTablet()"
       [isMobileDrawerOpen]="layout.isMobileDrawerOpen()"
       [isSidebarCollapsed]="layout.isSidebarCollapsed()"
+      [themeMode]="theme.theme()"
+      [systemTheme]="theme.systemTheme()"
       [isDarkMode]="theme.isDarkMode()"
       [userDisplayName]="auth.userFullName()"
       [userSecondaryLabel]="auth.currentUser()?.email ?? 'Not signed in'"
@@ -38,7 +43,8 @@
       [unreadNotificationsCount]="unreadCount()"
       (mobileMenuToggle)="layout.toggleMobileDrawer()"
       (sidebarCollapseToggle)="layout.toggleSidebarCollapse()"
-      (themeToggle)="theme.toggleTheme()"
+      (themeSelect)="theme.setTheme($event)"
+      (themeToggle)="theme.cycleTheme()"
       (logoutRequested)="onLogoutRequested()"
     />
 

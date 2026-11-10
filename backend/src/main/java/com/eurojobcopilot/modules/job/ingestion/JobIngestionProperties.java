@@ -32,6 +32,7 @@ public class JobIngestionProperties {
 
     private ArbeitnowProperties arbeitnow = new ArbeitnowProperties();
     private AdzunaProperties adzuna = new AdzunaProperties();
+    private JoobleProperties jooble = new JoobleProperties();
     private SchedulerProperties scheduler = new SchedulerProperties();
 
     @Getter
@@ -52,6 +53,19 @@ public class JobIngestionProperties {
         private List<String> countryCodes = List.of("de", "nl", "gb", "fr", "ch", "at");
         private int resultsPerPage = 50;
         private int maxPagesPerCountry = 2;
+    }
+
+    @Getter
+    @Setter
+    public static class JoobleProperties {
+        private boolean enabled = true;
+        private String baseUrl = "https://jooble.org/api";
+        private String apiKey = "";
+        private List<String> countryCodes = List.of("de", "nl", "gb", "ch");
+        private List<String> locations = List.of();
+        private String defaultKeywords = "Java OR Software Engineer";
+        private int resultsPerPage = 50;
+        private int maxPagesPerLocation = 1;
     }
 
     @Getter

@@ -56,7 +56,7 @@ public class MarketAnalyticsServiceImpl implements MarketAnalyticsService {
 
     private static final String COVERAGE_DISCLAIMER =
             "Analytics reflect only active job listings collected via EuroJob Copilot's configured discovery "
-                    + "connectors (e.g., Arbeitnow, Adzuna) and do not represent a complete national or regional "
+                    + "connectors (e.g., Arbeitnow, Adzuna, Jooble) and do not represent a complete national or regional "
                     + "labor-market census. Salary ranges are normalized to annual compensation within the dominant "
                     + "reporting currency per country when salary data is provided by the posting.";
 

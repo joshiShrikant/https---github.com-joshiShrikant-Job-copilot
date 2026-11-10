@@ -107,7 +107,11 @@ public class JobNormalizer {
             Map.entry("bel", "Belgium"),
             Map.entry("belgium", "Belgium"),
             Map.entry("lu", "Luxembourg"),
-            Map.entry("luxembourg", "Luxembourg")
+            Map.entry("luxembourg", "Luxembourg"),
+            Map.entry("us", "United States"),
+            Map.entry("usa", "United States"),
+            Map.entry("united states", "United States"),
+            Map.entry("united states of america", "United States")
     );
 
     private static final Map<String, String> CITY_TO_COUNTRY = Map.ofEntries(
@@ -140,6 +144,12 @@ public class JobNormalizer {
             Map.entry("zurich", "Switzerland"),
             Map.entry("geneva", "Switzerland"),
             Map.entry("basel", "Switzerland"),
+            Map.entry("bern", "Switzerland"),
+            Map.entry("lausanne", "Switzerland"),
+            Map.entry("zug", "Switzerland"),
+            Map.entry("winterthur", "Switzerland"),
+            Map.entry("st gallen", "Switzerland"),
+            Map.entry("lugano", "Switzerland"),
             Map.entry("london", "United Kingdom"),
             Map.entry("manchester", "United Kingdom"),
             Map.entry("edinburgh", "United Kingdom"),

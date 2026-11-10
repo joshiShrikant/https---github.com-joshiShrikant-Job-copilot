@@ -177,3 +177,30 @@ npm run build
 - **Email Delivery:** `NOTIFICATIONS_EMAIL_ENABLED` defaults to `false`; the current notifier (`LoggingAutopilotEmailNotifier`) logs digests only and does not send SMTP emails (`spring-boot-starter-mail` is not configured).
 - **Password Reset Flow:** `/auth/forgot-password` and `/auth/reset-password` frontend routes are UI previews; backend password reset token delivery requires SMTP configuration.
 - **In-Memory Rate Limiter:** `RateLimitingFilter` is designed for single-instance deployment; multi-replica horizontal scaling should replace it with distributed gateway or Redis rate limiting.
+
+
+<!-- List of other job listing providers -->
+<!-- // 1. Best alternatives to Adzuna API
+// Platform	API availability	Coverage
+// Jooble	Official API	Global
+// Careerjet	Official API	Global
+// Reed	Official API	UK
+// Arbeitnow	Free public API	Germany / Europe
+// The Muse	Official API	Mainly USA
+// Findwork	Developer API	Developer jobs
+// JSearch	API via RapidAPI	Multi-country
+// USAJobs	Official government API	USA
+// Arbeitsagentur	Official API	Germany
+
+// 2. Direct developer/API links
+// Platform	Developer / API registration
+// Adzuna	Get API key
+// Jooble	Get API key
+// Careerjet	API access
+// Reed	Developer portal
+// Arbeitnow	Website
+// The Muse	Developer API
+// Findwork	Developer API
+// JSearch	RapidAPI access
+// USAJobs	Developer API
+// Arbeitsagentur	API documentation -->

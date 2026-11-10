@@ -85,7 +85,7 @@ public class AdminIngestionController {
             )
     })
     public ResponseEntity<AdminIngestionTriggerResponse> triggerIngestion(
-            @Parameter(description = "Optional specific provider name override (e.g. ARBEITNOW or ADZUNA)")
+            @Parameter(description = "Optional specific provider name override (e.g. ARBEITNOW, ADZUNA, or JOOBLE)")
             @RequestParam(value = "provider", required = false) String provider,
             @Valid @RequestBody(required = false) TriggerIngestionRequest request
     ) {

@@ -51,17 +51,44 @@
       }
     </a>
 
-    <button
-      type="button"
-      class="icon-action-btn"
-      (click)="themeToggle.emit()"
-      [attr.aria-label]="isDarkMode() ? 'Switch to light theme' : 'Switch to dark theme'"
-      [attr.title]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-    >
-      <span class="material-symbols-outlined" aria-hidden="true">
-        {{ isDarkMode() ? 'light_mode' : 'dark_mode' }}
-      </span>
-    </button>
+    <div class="theme-segmented" role="group" aria-label="Color theme mode">
+      <button
+        type="button"
+        class="theme-seg-btn"
+        data-theme-option="system"
+        [class.is-active]="themeMode() === 'system'"
+        [attr.aria-pressed]="themeMode() === 'system'"
+        (click)="themeSelect.emit('system')"
+        [attr.title]="'System theme (' + (systemTheme() === 'dark' ? 'Dark' : 'Light') + ')'"
+        aria-label="Use system theme"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">desktop_windows</span>
+      </button>
+      <button
+        type="button"
+        class="theme-seg-btn"
+        data-theme-option="light"
+        [class.is-active]="themeMode() === 'light'"
+        [attr.aria-pressed]="themeMode() === 'light'"
+        (click)="themeSelect.emit('light')"
+        title="Light mode"
+        aria-label="Switch to light mode"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">light_mode</span>
+      </button>
+      <button
+        type="button"
+        class="theme-seg-btn"
+        data-theme-option="dark"
+        [class.is-active]="themeMode() === 'dark'"
+        [attr.aria-pressed]="themeMode() === 'dark'"
+        (click)="themeSelect.emit('dark')"
+        title="Dark mode"
+        aria-label="Switch to dark mode"
+      >
+        <span class="material-symbols-outlined" aria-hidden="true">dark_mode</span>
+      </button>
+    </div>
 
     <div class="header-divider" aria-hidden="true"></div>
 
@@ -69,7 +96,10 @@
       [displayName]="userDisplayName()"
       [secondaryLabel]="userSecondaryLabel()"
       [isAuthenticated]="isAuthenticated()"
+      [themeMode]="themeMode()"
+      [systemTheme]="systemTheme()"
       [isDarkMode]="isDarkMode()"
+      (themeSelect)="themeSelect.emit($event)"
       (themeToggle)="themeToggle.emit()"
       (logoutRequested)="logoutRequested.emit()"
     />

@@ -5,7 +5,7 @@
   z-index: 100;
   padding: 8px 14px;
   border-radius: var(--radius-sm);
-  background-color: var(--color-brand-primary);
+  background: var(--gradient-primary-btn);
   color: #ffffff;
   font-size: 0.85rem;
   font-weight: 600;
@@ -26,6 +26,7 @@
   background-color: var(--color-bg-canvas);
   color: var(--color-text-primary);
   position: relative;
+  transition: background-color 0.24s ease, color 0.24s ease;
 }
 
 .drawer-backdrop {
@@ -33,8 +34,9 @@
   inset: 0;
   z-index: 35;
   background-color: var(--color-scrim);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: ejcFadeIn 0.2s ease both;
 }
 
 .main-wrapper {
@@ -51,7 +53,10 @@
   overflow-y: auto;
   padding: 24px 28px;
   background-color: var(--color-bg-canvas);
+  background-image: var(--bg-mesh-app);
+  background-attachment: local;
   outline: none;
+  transition: background-color 0.24s ease;
 }
 
 .content-container {
